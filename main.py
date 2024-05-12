@@ -19,9 +19,12 @@ from irishsat_ukf.hfunc import *
 https://cs.adelaide.edu.au/~ianr/Teaching/Estimation/LectureNotes2.pdf
 https://github.com/FrancoisCarouge/Kalman
 https://www.researchgate.net/post/How_can_I_validate_the_Kalman_Filter_result
+https://stats.stackexchange.com/questions/40466/how-can-i-debug-and-check-the-consistency-of-a-kalman-filter
+file:///C:/Users/andre/Downloads/WikibookonKalmanFilter.pdf
 
 
 EOMs are messed up. changed rw_config back to gamma and such
+    change I_trans from non-zero?
 
 '''
 
@@ -75,6 +78,27 @@ class Filter():
 
         # update starting cov guess
         self.cov = R * self.Q
+    
+    def generateSpeeds(self, max, min, steps, step, indices):
+        # indices = bitset of sorts to signify which axis you want movement about
+        # speed on x and z would equal [1, 0, 1]
+            
+        ideal_reaction_speeds = [np.array([0, 0, 0])]
+        thing = 0
+
+        for a in range(self.n):
+            if (a < steps and thing < max):
+                thing += step
+            elif thing > min:
+                thing -= step
+            
+            result = np.array([thing, thing, thing])
+            # multiply by bitset to get only proper axis
+            result = indices * result
+            ideal_reaction_speeds.append(result)
+
+        return np.array(ideal_reaction_speeds)
+
 
     def propagate(self, reaction_speeds):
         # given initial state + correct wheel speeds, return ideal states
@@ -92,7 +116,7 @@ class Filter():
                 [536.12, -710.058, 23138.181]])
         I_body = I_body * 1e-7
         I_spin = 5.1e-7
-        I_trans = 0
+        I_trans = 5.1e-7
         # intialize 1D EOMs using intertia measurements of cubeSat
         EOMS = TEST1EOMS(I_body, I_spin, I_trans)
 
@@ -109,6 +133,9 @@ class Filter():
             currState = EOMS.eoms(currState[:4], currState[4:], self.reaction_speeds, 0, alpha, self.dt)
 
             states = np.append(states, np.array([currState]), axis=0)
+        
+        # remove duplicate first element
+        states = states[1:]
         
         return states
 
@@ -163,36 +190,21 @@ if __name__ == "__main__":
 
     ukf = Filter(500, 0.1, 7, 6, 0, 0, np.array([0, 0, 0]), np.array([0, 0, 0]), UKF)
 
-    ukf.ukf_setQ(.1, 10)
+    ukf.ukf_setQ(.05, 10)
 
-    ukf.ukf_setR(.2, .2)
+    ukf.ukf_setR(.1, .1)
 
-    # TODO: define ideal reaction wheel speed at each iteration?
-    max = 100
-    min = -100
-    thing = 0
-    ideal_reaction_speeds = [np.array([0, 0, 0])]
-    for a in range(ukf.n):
-        if (a < 150 and thing < max):
-            thing += 10
-        elif thing > min:
-            thing -= 10
-        
-        ideal_reaction_speeds.append(np.array([0, 0, thing]))
-        # ideal_reaction_speeds = np.append(ideal_reaction_speeds, np.array([0, 0, thing]), axis=0)
-    ideal_reaction_speeds = np.array(ideal_reaction_speeds)
-
-    print(ideal_reaction_speeds[:20])
+    ideal_reaction_speeds = ukf.generateSpeeds(1000, -1000, 150, 100, np.array([0, 0, 1]))
+    # print(ideal_reaction_speeds[:20])
 
     ideal = ukf.propagate(ideal_reaction_speeds)
-    
     print("state: ", ideal[:10])
 
-    magNoises = np.random.normal(0, .01, (ukf.n, 3))
-    gyroNoises = np.random.normal(0, .01, ukf.n)
-    data = ukf.generateData(ideal, magNoises, gyroNoises, 0)
+    magNoises = np.random.normal(0, .005, (ukf.n, 3))
+    gyroNoises = np.random.normal(0, .005, ukf.n)
 
-    print("data: ", data[:10])
+    data = ukf.generateData(ideal, magNoises, gyroNoises, 0)
+    print("data: ", data[:20])
 
 
     filtered = ukf.simulate(data, ideal_reaction_speeds)
