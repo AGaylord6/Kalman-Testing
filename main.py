@@ -41,7 +41,9 @@ class Filter():
         # process noise
         self.Q = np.diag([q_mag] * dim)
 
-        self.state = np.array([1, 0, 0, 0, 0, 0, 0])
+        self.state = np.array([1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.state[:4] = normalize(self.state[:4])
+        # print("starting state: ", self.state)
         self.cov = np.identity(dim) * 5e-4
 
         self.B_true = B_true
@@ -97,7 +99,7 @@ class Filter():
             result = indices * result
             ideal_reaction_speeds.append(result)
 
-        return np.array(ideal_reaction_speeds)
+        return np.array(ideal_reaction_speeds[:self.n])
 
 
     def propagate(self, reaction_speeds):
@@ -157,9 +159,9 @@ class Filter():
             data[a][0] = B_sens[a][0]
             data[a][1] = B_sens[a][1]
             data[a][2] = B_sens[a][2]
-            data[a][3] = states[a][3] + gyroNoises[a]
-            data[a][4] = states[a][4] + gyroNoises[a]
-            data[a][5] = states[a][5] + gyroNoises[a]
+            data[a][3] = states[a][3] + gyroNoises[a][0]
+            data[a][4] = states[a][4] + gyroNoises[a][1]
+            data[a][5] = states[a][5] + gyroNoises[a][2]
 
         return data
 
@@ -190,24 +192,27 @@ if __name__ == "__main__":
 
     ukf = Filter(500, 0.1, 7, 6, 0, 0, np.array([0, 0, 0]), np.array([0, 0, 0]), UKF)
 
-    ukf.ukf_setQ(.05, 10)
+    # set process noise
+    ukf.ukf_setQ(.005, 10)
 
-    ukf.ukf_setR(.1, .1)
+    # set measurement noise
+    ukf.ukf_setR(.2, .02)
 
     ideal_reaction_speeds = ukf.generateSpeeds(1000, -1000, 150, 100, np.array([0, 0, 1]))
     # print(ideal_reaction_speeds[:20])
 
     ideal = ukf.propagate(ideal_reaction_speeds)
-    print("state: ", ideal[:10])
+    # print("state: ", ideal[:10])
 
-    magNoises = np.random.normal(0, .005, (ukf.n, 3))
-    gyroNoises = np.random.normal(0, .005, ukf.n)
+    magNoises = np.random.normal(0, .01, (ukf.n, 3))
+    gyroNoises = np.random.normal(0, .001, (ukf.n, 3))
 
     data = ukf.generateData(ideal, magNoises, gyroNoises, 0)
-    print("data: ", data[:20])
+    # print("data: ", data[:20])
 
 
     filtered = ukf.simulate(data, ideal_reaction_speeds)
+
 
     # ukf.plotResults(ideal)
     ukf.plotResults(filtered)

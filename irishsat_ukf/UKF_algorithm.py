@@ -467,7 +467,8 @@ def UKF(means, cov, q, r, gps_data, reaction_speeds, old_reaction_speeds, data):
     means = np.add(predMeans, np.matmul(kalman, np.subtract(data, mesMeans)))
 
     # normalize the quaternion to reduce small calculation errors over time
-    means[0:4] = means[0:4]/np.linalg.norm(means[0:4])
+    # means[0:4] = means[0:4]/np.linalg.norm(means[0:4])
+    means[0:4] = normalize(means[:4])
 
     # eq 17: updated covariance = predicted covariance - kalman * measurement cov * transposed kalman
     cov = np.subtract(predCov, np.matmul(np.matmul(kalman, mesCov), kalman.transpose()))
