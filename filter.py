@@ -134,6 +134,7 @@ class Filter():
         B_sens = np.array([np.matmul(quaternion_rotation_matrix(states[0]), self.B_true)])
         for a in range(1, self.n):
             B_sens = np.append(B_sens, np.array([np.matmul(quaternion_rotation_matrix(states[a]), self.B_true)]), axis=0)
+            # print("{}: {}".format(a, np.matmul(quaternion_rotation_matrix(states[a]), self.B_true)))
         
         B_sens += magNoises
 
@@ -143,9 +144,9 @@ class Filter():
             data[a][0] = B_sens[a][0]
             data[a][1] = B_sens[a][1]
             data[a][2] = B_sens[a][2]
-            data[a][3] = states[a][3] + gyroNoises[a][0]
-            data[a][4] = states[a][4] + gyroNoises[a][1]
-            data[a][5] = states[a][5] + gyroNoises[a][2]
+            data[a][3] = states[a][4] + gyroNoises[a][0]
+            data[a][4] = states[a][5] + gyroNoises[a][1]
+            data[a][5] = states[a][6] + gyroNoises[a][2]
 
         return data
 
