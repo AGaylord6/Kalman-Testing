@@ -46,6 +46,7 @@ TODO:
     figure out what to plot for 3D graphs (time dependent?)
 
 optional:
+    more comprehensive plotting: wrappers, options, make part of Filter class
     flesh out 3D graphs more: colors, many at once (ideal, data, filtered)
     switch to euler angles instead of xyz?
     generate fake imu data using matlab functionality??
@@ -75,7 +76,7 @@ def plot_multiple_lines(data, labels, title):
     plt.title(title)
 
     # Show the plot
-    plt.show()
+    # plt.show()
 
 
 def plot3DVectors(vectors, plotSegment):
@@ -112,7 +113,7 @@ def plot3DVectors(vectors, plotSegment):
     ax.set_ylim([bounds[0], bounds[1]])
     ax.set_zlim([bounds[0], bounds[1]])
 
-    plt.show()
+    # plt.show()
 
 
 def plotData3D(data, numVectors, plotSegment):
@@ -134,9 +135,25 @@ def plotData3D(data, numVectors, plotSegment):
 def plot_xyz(data, title):
      # given a numpy 2D list (where every element contains x, y, z), plot them on graph
 
-    data = data.transpose()
+    newData = data.transpose()
 
-    plot_multiple_lines(data, ["x", "y", "z"], title)
+    if len(data[0]) == 4:
+        plot_multiple_lines(newData, ["a", "b", "c", "d"], title)
+    else:
+        plot_multiple_lines(newData, ["x", "y", "z"], title)
+
+
+def plotState_xyz(data):
+    # plots our 7 dimesnional state on 2 graphs: quaternion and angular velocity
+
+    quaternions = np.array([data[0][:4]])
+    velocities = np.array([data[0][4:]])
+    for i in range(1, len(data)):
+        quaternions = np.append(quaternions, np.array([data[i][:4]]), axis=0)
+        velocities = np.append(velocities, np.array([data[i][4:]]), axis=0)
+
+    plot_xyz(quaternions, "Quaternion")
+    plot_xyz(velocities, "Angular Velocity")
 
 
 def plotData_xyz(data):
@@ -154,16 +171,16 @@ def plotData_xyz(data):
 if __name__ == "__main__":
     
 
-    ukf = Filter(180, 0.1, 7, 6, 0, 0, np.array([-1, 0, 0]), np.array([0, 0, 0]), UKF)
+    ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([-1, 0, 0]), np.array([0, 0, 0]), UKF)
 
     # set process noise
     ukf.ukf_setQ(.01, 10)
 
     # set measurement noise
-    ukf.ukf_setR(.1, .1)
+    ukf.ukf_setR(.25, .5)
 
 
-    ideal_reaction_speeds = ukf.generateSpeeds(900, -900, ukf.n/2, 100, np.array([0, 0, 1]))
+    ideal_reaction_speeds = ukf.generateSpeeds(1300, -1300, ukf.n, 100, np.array([0, 0, 1]))
     # print(ideal_reaction_speeds[:20])
 
     ideal = ukf.propagate(ideal_reaction_speeds)
@@ -182,7 +199,12 @@ if __name__ == "__main__":
     # ideal_xyz = [np.matmul(quaternion_rotation_matrix(x), np.array([1, 0, 0])) for x in ideal]
     # plotData3D(ideal_xyz, 3, 111)
 
-    # plotData_xyz(data)
+    plotState_xyz(ideal)
+    plotData_xyz(data)
+
+    # only show plot at end so they all show up
+    plt.show()
+
 
     filtered = ukf.simulate(data, ideal_reaction_speeds)
 
