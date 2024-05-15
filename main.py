@@ -27,17 +27,28 @@ https://www.researchgate.net/post/How_can_I_validate_the_Kalman_Filter_result
 https://stats.stackexchange.com/questions/40466/how-can-i-debug-and-check-the-consistency-of-a-kalman-filter
 file:///C:/Users/andre/Downloads/WikibookonKalmanFilter.pdf
 
-
+notes:
 EOMs are messed up. changed rw_config back to gamma and such
     change I_trans from non-zero?
 
 must ensure quaternion is normalized
 
-how is B_true connected to our starting state + initial eoms progagation
+issues:
+    how is B_true connected to our starting state + initial eoms progagation
+        need to check other B_trues and rotations about other axis (like y)
+    
+    was is orientation of simulation?? what are we enforcing with starting quaternion??
 
-generate fake imu data using matlab functionality??
+TODO:
+    statistical tests
+    effiency test/graphs (read article)
+    plotting comparisons between filter/unfiltered
+    figure out what to plot for 3D graphs (time dependent?)
 
-flesh out 3D graphs more: colors, many at once (ideal, data, filtered)
+optional:
+    flesh out 3D graphs more: colors, many at once (ideal, data, filtered)
+    switch to euler angles instead of xyz?
+    generate fake imu data using matlab functionality??
 
 '''
 
@@ -65,6 +76,7 @@ def plot_multiple_lines(data, labels, title):
 
     # Show the plot
     plt.show()
+
 
 def plot3DVectors(vectors, plotSegment):
     # plotSegment: 3 digit number 'nmi'
@@ -118,27 +130,6 @@ def plotData3D(data, numVectors, plotSegment):
     # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)
     plot3DVectors(result, 111)
 
-def euler_from_quaternion(w, x, y, z):
-        """
-        Convert a quaternion into euler angles (roll, pitch, yaw)
-        roll is rotation around x in radians (counterclockwise)
-        pitch is rotation around y in radians (counterclockwise)
-        yaw is rotation around z in radians (counterclockwise)
-        """
-        t0 = +2.0 * (w * x + y * z)
-        t1 = +1.0 - 2.0 * (x * x + y * y)
-        roll_x = math.atan2(t0, t1)
-     
-        t2 = +2.0 * (w * y - z * x)
-        t2 = +1.0 if t2 > +1.0 else t2
-        t2 = -1.0 if t2 < -1.0 else t2
-        pitch_y = math.asin(t2)
-     
-        t3 = +2.0 * (w * z + x * y)
-        t4 = +1.0 - 2.0 * (y * y + z * z)
-        yaw_z = math.atan2(t3, t4)
-     
-        return roll_x, pitch_y, yaw_z # in radians
 
 def plot_xyz(data, title):
      # given a numpy 2D list (where every element contains x, y, z), plot them on graph
@@ -146,6 +137,7 @@ def plot_xyz(data, title):
     data = data.transpose()
 
     plot_multiple_lines(data, ["x", "y", "z"], title)
+
 
 def plotData_xyz(data):
 
@@ -162,7 +154,7 @@ def plotData_xyz(data):
 if __name__ == "__main__":
     
 
-    ukf = Filter(180, 0.1, 7, 6, 0, 0, np.array([1, 1, 0]), np.array([0, 0, 0]), UKF)
+    ukf = Filter(180, 0.1, 7, 6, 0, 0, np.array([-1, 0, 0]), np.array([0, 0, 0]), UKF)
 
     # set process noise
     ukf.ukf_setQ(.01, 10)
