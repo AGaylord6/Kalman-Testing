@@ -68,14 +68,14 @@ class Filter():
     def generateSpeeds(self, max, min, steps, step, indices):
         # indices = bitset of sorts to signify which axis you want movement about
         # speed on x and z would equal [1, 0, 1]
-            
+
         ideal_reaction_speeds = [np.array([0, 0, 0])]
         thing = 0
 
         for a in range(self.n):
             if (a < steps and thing < max):
                 thing += step
-            elif thing > min:
+            elif thing > min and a > steps:
                 thing -= step
             
             result = np.array([thing, thing, thing])

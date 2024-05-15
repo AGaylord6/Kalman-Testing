@@ -41,6 +41,31 @@ flesh out 3D graphs more: colors, many at once (ideal, data, filtered)
 
 '''
 
+
+def plot_multiple_lines(data, labels, title):
+    """Plots multiple lines on the same graph.
+
+    Args:
+        data: A list of lists of data points.
+        labels: A list of labels for each line.
+        title: title for graph
+    """
+
+    # Create a figure and axes
+    fig, ax = plt.subplots()
+
+    # Plot each line.
+    for i, line in enumerate(data):
+        ax.plot(line, label=labels[i])
+
+    # Add a legend
+    ax.legend()
+
+    plt.title(title)
+
+    # Show the plot
+    plt.show()
+
 def plot3DVectors(vectors, plotSegment):
     # plotSegment: 3 digit number 'nmi'
     #       split plot into n by m plots and picks ith one
@@ -78,7 +103,7 @@ def plot3DVectors(vectors, plotSegment):
     plt.show()
 
 
-def plotData(data, numVectors, plotSegment):
+def plotData3D(data, numVectors, plotSegment):
     # print numVector elements of data, divided evenly
 
     section = int(len(data) / (2*numVectors))
@@ -115,11 +140,29 @@ def euler_from_quaternion(w, x, y, z):
      
         return roll_x, pitch_y, yaw_z # in radians
 
+def plot_xyz(data, title):
+     # given a numpy 2D list (where every element contains x, y, z), plot them on graph
+
+    data = data.transpose()
+
+    plot_multiple_lines(data, ["x", "y", "z"], title)
+
+def plotData_xyz(data):
+
+    magData = np.array([data[0][:3]])
+    gyroData = np.array([data[0][3:]])
+    for i in range(1, len(data)):
+        magData = np.append(magData, np.array([data[i][:3]]), axis=0)
+        gyroData = np.append(gyroData, np.array([data[i][3:]]), axis=0)
+
+    plot_xyz(magData, "Magnetometer")
+    plot_xyz(gyroData, "Gyroscope")
+
 
 if __name__ == "__main__":
     
 
-    ukf = Filter(180, 0.1, 7, 6, 0, 0, np.array([-1, 0, 0]), np.array([0, 0, 0]), UKF)
+    ukf = Filter(180, 0.1, 7, 6, 0, 0, np.array([1, 1, 0]), np.array([0, 0, 0]), UKF)
 
     # set process noise
     ukf.ukf_setQ(.01, 10)
@@ -142,10 +185,12 @@ if __name__ == "__main__":
     # # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)
     # plot3DVectors(result, 111)
 
-    # plotData(data, 5, 111)
+    # plotData3D(data, 5, 111)
 
     # ideal_xyz = [np.matmul(quaternion_rotation_matrix(x), np.array([1, 0, 0])) for x in ideal]
-    # plotData(ideal_xyz, 3, 111)
+    # plotData3D(ideal_xyz, 3, 111)
+
+    # plotData_xyz(data)
 
     filtered = ukf.simulate(data, ideal_reaction_speeds)
 
