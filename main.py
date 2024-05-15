@@ -17,7 +17,9 @@ from filter import *
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import matplotlib
 from mpl_toolkits.mplot3d import Axes3D
+import signal
 
 '''
 
@@ -54,7 +56,17 @@ optional:
 '''
 
 
-def plot_multiple_lines(data, labels, title):
+def signal_handler(sig, frame):
+    '''
+    signal_handler
+
+    closes all pyplot tabs
+    '''
+
+    plt.close('all')
+
+
+def plot_multiple_lines(data, labels, title, x, y):
     """Plots multiple lines on the same graph.
 
     Args:
@@ -75,8 +87,23 @@ def plot_multiple_lines(data, labels, title):
 
     plt.title(title)
 
+    move_figure(fig, x, y)
+
     # Show the plot
     # plt.show()
+
+
+def move_figure(f, x, y):
+    """Move figure's upper left corner to pixel (x, y)"""
+    backend = matplotlib.get_backend()
+    if backend == 'TkAgg':
+        f.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
+    elif backend == 'WXAgg':
+        f.canvas.manager.window.SetPosition((x, y))
+    else:
+        # This works for QT and GTK
+        # You can also use window.setGeometry
+        f.canvas.manager.window.move(x, y)
 
 
 def plot3DVectors(vectors, plotSegment):
@@ -132,15 +159,15 @@ def plotData3D(data, numVectors, plotSegment):
     plot3DVectors(result, 111)
 
 
-def plot_xyz(data, title):
+def plot_xyz(data, title, x, y):
      # given a numpy 2D list (where every element contains x, y, z), plot them on graph
 
     newData = data.transpose()
 
     if len(data[0]) == 4:
-        plot_multiple_lines(newData, ["a", "b", "c", "d"], title)
+        plot_multiple_lines(newData, ["a", "b", "c", "d"], title, x, y)
     else:
-        plot_multiple_lines(newData, ["x", "y", "z"], title)
+        plot_multiple_lines(newData, ["x", "y", "z"], title, x, y)
 
 
 def plotState_xyz(data):
@@ -152,8 +179,8 @@ def plotState_xyz(data):
         quaternions = np.append(quaternions, np.array([data[i][:4]]), axis=0)
         velocities = np.append(velocities, np.array([data[i][4:]]), axis=0)
 
-    plot_xyz(quaternions, "Quaternion")
-    plot_xyz(velocities, "Angular Velocity")
+    plot_xyz(velocities, "Angular Velocity", 50, 50)
+    plot_xyz(quaternions, "Quaternion", 0, 0)
 
 
 def plotData_xyz(data):
@@ -164,14 +191,16 @@ def plotData_xyz(data):
         magData = np.append(magData, np.array([data[i][:3]]), axis=0)
         gyroData = np.append(gyroData, np.array([data[i][3:]]), axis=0)
 
-    plot_xyz(magData, "Magnetometer")
-    plot_xyz(gyroData, "Gyroscope")
+    plot_xyz(gyroData, "Gyroscope", 1050, 50)
+    plot_xyz(magData, "Magnetometer", 1000, 0)
 
 
 if __name__ == "__main__":
-    
 
-    ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([-1, 0, 0]), np.array([0, 0, 0]), UKF)
+    # set up signal handler to shut down pyplot tabs
+    signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
+
+    ukf = Filter(150, 0.1, 7, 6, 0, 0, np.array([-1, 0, 0]), np.array([0, 0, 0]), UKF)
 
     # set process noise
     ukf.ukf_setQ(.01, 10)
@@ -191,6 +220,8 @@ if __name__ == "__main__":
 
     data = ukf.generateData(ideal, magNoises, gyroNoises, 0)
 
+    filtered = ukf.simulate(data, ideal_reaction_speeds)
+
     # # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)
     # plot3DVectors(result, 111)
 
@@ -203,14 +234,10 @@ if __name__ == "__main__":
     plotData_xyz(data)
 
     # only show plot at end so they all show up
+
+    ukf.visualizeResults(ideal)
     plt.show()
-
-
-    filtered = ukf.simulate(data, ideal_reaction_speeds)
-
-
-    # ukf.plotResults(ideal)
-    ukf.plotResults(filtered)
+    # ukf.visualizeResults(filtered)
 
 
 

@@ -165,7 +165,7 @@ class Filter():
 
         return states
 
-    def plotResults(self, states):
+    def visualizeResults(self, states):
         # plot residuals
         # or visualize 3 things: raw, filtered, ideal
 
