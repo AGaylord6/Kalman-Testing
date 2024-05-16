@@ -170,8 +170,9 @@ def plot_xyz(data, title, x, y):
         plot_multiple_lines(newData, ["x", "y", "z"], title, x, y)
 
 
-def plotState_xyz(data):
+def plotState_xyz(data, ideal):
     # plots our 7 dimesnional state on 2 graphs: quaternion and angular velocity
+    # ideal: true if top left, false if bottom middle
 
     quaternions = np.array([data[0][:4]])
     velocities = np.array([data[0][4:]])
@@ -179,8 +180,13 @@ def plotState_xyz(data):
         quaternions = np.append(quaternions, np.array([data[i][:4]]), axis=0)
         velocities = np.append(velocities, np.array([data[i][4:]]), axis=0)
 
-    plot_xyz(velocities, "Angular Velocity", 50, 50)
-    plot_xyz(quaternions, "Quaternion", 0, 0)
+    if ideal:
+        plot_xyz(velocities, "Angular Velocity", 50, 0)
+        plot_xyz(quaternions, "Ideal Quaternion", 0, 0)
+    else:
+        plot_xyz(velocities, "Angular Velocity", 575, 370)
+        plot_xyz(quaternions, "Filtered Quaternion", 525, 370)
+
 
 
 def plotData_xyz(data):
@@ -191,8 +197,8 @@ def plotData_xyz(data):
         magData = np.append(magData, np.array([data[i][:3]]), axis=0)
         gyroData = np.append(gyroData, np.array([data[i][3:]]), axis=0)
 
-    plot_xyz(gyroData, "Gyroscope", 1050, 50)
-    plot_xyz(magData, "Magnetometer", 1000, 0)
+    plot_xyz(gyroData, "Gyroscope", 1100, 0)
+    plot_xyz(magData, "Magnetometer", 1050, 0)
 
 
 if __name__ == "__main__":
@@ -200,26 +206,36 @@ if __name__ == "__main__":
     # set up signal handler to shut down pyplot tabs
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
 
-    ukf = Filter(150, 0.1, 7, 6, 0, 0, np.array([-1, 0, 0]), np.array([0, 0, 0]), UKF)
+    # create unscented kalman filter object
+    # steps to simulate, timestep, state space dimension, measurement space dimension, measurement noise, process noise, true magnetic field, starting reaction wheel speed, filter type
+    ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([-1, 0, 0]), np.array([0, 0, 0]), UKF)
 
     # set process noise
+    # noise magnitude, k (see Estimation II article by Ian Reed)
     ukf.ukf_setQ(.01, 10)
 
     # set measurement noise
+    # magnetometer noise, gyroscope noise
     ukf.ukf_setR(.25, .5)
+    ukf.ukf_setR(.01, .01)
 
-
+    # create array of reaction wheel speed at each time step
+    # max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
     ideal_reaction_speeds = ukf.generateSpeeds(1300, -1300, ukf.n, 100, np.array([0, 0, 1]))
     # print(ideal_reaction_speeds[:20])
 
+    # find ideal state of cubesat through physics equations of motion
     ideal = ukf.propagate(ideal_reaction_speeds)
     # print("state: ", ideal[:10])
 
+    # set sensor noises
     magNoises = np.random.normal(0, .001, (ukf.n, 3))
     gyroNoises = np.random.normal(0, .001, (ukf.n, 3))
 
+    # generate data reading for each step 
     data = ukf.generateData(ideal, magNoises, gyroNoises, 0)
 
+    # run our data through the specified kalman function (ukf)
     filtered = ukf.simulate(data, ideal_reaction_speeds)
 
     # # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)
@@ -230,14 +246,22 @@ if __name__ == "__main__":
     # ideal_xyz = [np.matmul(quaternion_rotation_matrix(x), np.array([1, 0, 0])) for x in ideal]
     # plotData3D(ideal_xyz, 3, 111)
 
-    plotState_xyz(ideal)
-    plotData_xyz(data)
+    plot = 1
 
-    # only show plot at end so they all show up
+    if plot == 1:
+        plotState_xyz(ideal, True)
+        plotData_xyz(data)
+        plotState_xyz(filtered, False)
 
-    ukf.visualizeResults(ideal)
-    plt.show()
-    # ukf.visualizeResults(filtered)
+        # only show plot at end so they all show up
+        plt.show()
+
+    else:
+        # ukf.visualizeResults(ideal)
+        ukf.visualizeResults(filtered)
+
+
+
 
 
 
