@@ -25,7 +25,7 @@ class Filter():
         # process noise
         self.Q = np.diag([q_mag] * dim)
 
-        self.state = np.array([1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.state = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.state[:4] = normalize(self.state[:4])
         # print("starting state: ", self.state)
         self.cov = np.identity(dim) * 5e-7
