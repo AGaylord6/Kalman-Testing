@@ -2,7 +2,8 @@
 main.py
 Author: Andrew Gaylord
 
-uses fake models to simulate and compare different kalman filters
+Main file for Kalman-Testing rep
+Sets up fake models to simulate CubeSat and compare results of different kalman filters
 
 '''
 
@@ -16,10 +17,7 @@ from irishsat_ukf.hfunc import *
 from filter import *
 from graphing import *
 
-# import matplotlib.pyplot as plt
-# from matplotlib import cm
-# import matplotlib
-# from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
 import signal
 
 '''
@@ -32,10 +30,8 @@ file:///C:/Users/andre/Downloads/WikibookonKalmanFilter.pdf
 
 one of the ways to check Kalman filters performance is to check for error covariance matrix P 
 to be converging. If it converges to + or - standard deviation of the estimated value, 
-it can be considered as a stable point.
-
+it can be considered as a stable point. 
 calculate square of difference between estimated and real
-
 You can verify that the estimated state converges to the actual state. 
 The error covariance, P, must decrease.
 
@@ -58,7 +54,7 @@ issues:
     how is B_true connected to our starting state + initial eoms progagation
         need to check other B_trues and rotations about other axis (like y)
     
-    was is orientation of simulation?? what are we enforcing with starting quaternion??
+    what is orientation of simulation?? what are we enforcing with starting quaternion??
 
 TODO:
     statistical tests
@@ -69,7 +65,6 @@ TODO:
 optional:
     more comprehensive plotting: wrappers, options, make part of Filter class
     flesh out 3D graphs more: colors, many at once (ideal, data, filtered)
-    switch to euler angles instead of xyz?
     generate fake imu data using matlab functionality??
 
 '''
