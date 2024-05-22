@@ -30,6 +30,11 @@ class Filter():
         # print("starting state: ", self.state)
         self.cov = np.identity(dim) * 5e-7
 
+        # 2D array of n innovations and covariances
+        # self.innovations = np.array([np.zeros(dim_mes)] * n)
+        self.innovations = np.zeros((n, dim_mes))
+        self.innovationCovs = np.zeros((n, dim_mes, dim_mes))
+
         self.B_true = B_true
 
         self.reaction_speeds = reaction_speeds
@@ -160,7 +165,9 @@ class Filter():
             self.old_reaction_speeds = self.reaction_speeds
             self.reaction_speeds = reaction_speeds[i]
 
-            self.state, self.cov = self.kalmanMethod(self.state, self.cov, self.Q, self.R, self.B_true, self.reaction_speeds, self.old_reaction_speeds, data[i])
+            self.state, self.cov, innovation, innovationCov = self.kalmanMethod(self.state, self.cov, self.Q, self.R, self.B_true, self.reaction_speeds, self.old_reaction_speeds, data[i])
+            self.innovations[i] = innovation
+            self.innovationCovs[i] = innovationCov
             states.append(self.state)
 
         return states

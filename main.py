@@ -115,7 +115,7 @@ if __name__ == "__main__":
     magNoises = np.random.normal(0, .001, (ukf.n, 3))
     gyroNoises = np.random.normal(0, .001, (ukf.n, 3))
 
-    plot = 1
+    plot = 2
 
     # generate data reading for each step 
     data = ukf.generateData(ideal, magNoises, gyroNoises, 0)
@@ -123,6 +123,10 @@ if __name__ == "__main__":
     # run our data through the specified kalman function (ukf)
     filtered = ukf.simulate(data, ideal_reaction_speeds)
 
+
+    innovationMags = np.array([np.linalg.norm(x) for x in ukf.innovations])
+    plot_multiple_lines(np.array([innovationMags]), ["innovation magnitude"], "innovation", 300, 200)
+    
     # # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)
     # plot3DVectors(result, 111)
 
@@ -138,13 +142,13 @@ if __name__ == "__main__":
         plotData_xyz(data)
         plotState_xyz(filtered, False)
 
-        # only show plot at end so they all show up
-        plt.show()
 
-    else:
+    elif plot == 0:
         # ukf.visualizeResults(ideal)
         ukf.visualizeResults(filtered)
 
+    # only show plot at end so they all show up
+    plt.show()
 
 
 

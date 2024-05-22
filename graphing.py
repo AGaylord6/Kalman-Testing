@@ -20,6 +20,7 @@ def plot_multiple_lines(data, labels, title, x, y):
         data: A list of lists of data points.
         labels: A list of labels for each line.
         title: title for graph
+        x, y: pixel location on screen
     """
 
     # Create a figure and axes

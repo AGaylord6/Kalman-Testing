@@ -474,6 +474,23 @@ def UKF(means, cov, q, r, gps_data, reaction_speeds, old_reaction_speeds, data):
     cov = np.subtract(predCov, np.matmul(np.matmul(kalman, mesCov), kalman.transpose()))
 
 
+
+    # innovation testing
+
+    # difference between measurement and prediction
+    # V_k+1 = Z_k+1 - Z~_k+1|k
+    # V_k+1 = Z_k+1 - H_k+1 * X_k+1|k
+
+    innovation = np.subtract(data, mesMeans)
+
+
+    # inovation cov
+    # measurement noise + transition matrix * cov matrix
+    # S_k+1 = R_k+1 + H_K+1 * P_k+1|k * H^T_k+1
+    # which literally equals cov in measurement haha
+    innovationCov = mesCov
+
+
     # print("MEANS AT END: ", means)
     # print("COV AT END: ", cov)
-    return [means, cov]
+    return [means, cov, innovation, innovationCov]
