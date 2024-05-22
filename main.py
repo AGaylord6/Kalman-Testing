@@ -123,9 +123,21 @@ if __name__ == "__main__":
     # run our data through the specified kalman function (ukf)
     filtered = ukf.simulate(data, ideal_reaction_speeds)
 
-
+    # take magnitudes of innovation innovation arrays
     innovationMags = np.array([np.linalg.norm(x) for x in ukf.innovations])
-    plot_multiple_lines(np.array([innovationMags]), ["innovation magnitude"], "innovation", 300, 200)
+
+    # to get standard deviation, take sqrt of diagonal
+    # divide by number of observations to get standard error of mean
+    # get magnitude afterwards
+    innovationCovMags = np.array([np.linalg.norm(y / ukf.dim_mes) for y in np.array([np.sqrt(np.diag(x)) for x in ukf.innovationCovs])])
+    print(innovationCovMags[:3])
+
+    upper = innovationMags + 2 * innovationCovMags
+    lower = innovationCovMags - 2 * innovationCovMags
+
+    # plot_multiple_lines(np.array([innovationMags, innovationCovMags]), ["innovation magnitude", "covariance magnitude"], "innovation", 300, 200)
+    plot_multiple_lines(np.array([innovationMags, upper, lower]), ["innovation magnitude", "upper sd", "lower sd"], "innovation", 300, 200)
+
     
     # # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)
     # plot3DVectors(result, 111)
