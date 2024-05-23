@@ -102,12 +102,10 @@ class Filter():
         # states = propagator.propagate_states(t0, tf, self.n)
 
         # intertia constants from juwan
-        I_body = np.array([[46535.388, 257.834, 536.12],
-                [257.834, 47934.771, -710.058],
-                [536.12, -710.058, 23138.181]])
-        I_body = I_body * 1e-7
+        I_body = I_body_sat * 1e-7
         I_spin = 5.1e-7
-        I_trans = 5.1e-7
+        # I_trans = 5.1e-7
+        I_trans = 0
         # intialize 1D EOMs using intertia measurements of cubeSat
         EOMS = TEST1EOMS(I_body, I_spin, I_trans)
 

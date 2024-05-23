@@ -34,6 +34,14 @@ import scipy.linalg
 from hfunc import *
 from typing import Optional
 
+I_body_sat = np.array([[46535.388, 257.834, 536.12],
+              [257.834, 47934.771, -710.058],
+              [536.12, -710.058, 23138.181]])
+
+# I_body_sat = np.array([[10000, 250, 250],
+                    #    [250, 100000, 250],
+                    #    [250, 250, 10000]])
+
 
 def sigma(means, cov, n, scaling):
     '''
@@ -98,7 +106,7 @@ class TEST1EOMS():
         # by theta_1D = 135 degrees
         #theta_1D = 135*np.pi/180.0
         #self.rw_config = np.array([[np.cos(theta_1D), np.sin(theta_1D), 0], [-np.sin(theta_1D), np.cos(theta_1D), 0], [1/np.sqrt(2), 0, 1/np.sqrt(2)]])
-        
+
         # Calculate contributions of reaction wheel to moment of inertia tensor due to principal moment transverse to the spin axis
         for i in np.arange(self.rw_config.shape[1]):
             self.I_body = self.I_body + I_w_trans*(np.identity(3) - np.matmul(self.rw_config[:, i], np.transpose(self.rw_config[:, i]))) 
@@ -154,7 +162,8 @@ class TEST1EOMS():
         w_rw_dot = alpha_rw
         
         # Add propagation here
-        quaternion_new = quaternion + quaternion_dot*dt
+        # and normalize quaternion
+        quaternion_new = normalize(quaternion + quaternion_dot*dt)
         w_sat_new = w_sat + w_sat_dot*dt
 
         new_state = np.append(quaternion_new, w_sat_new)
@@ -411,9 +420,7 @@ def UKF(means, cov, q, r, gps_data, reaction_speeds, old_reaction_speeds, data):
 
     # prediction step
     # intertia constants from juwan
-    I_body = np.array([[46535.388, 257.834, 536.12],
-              [257.834, 47934.771, -710.058],
-              [536.12, -710.058, 23138.181]])
+    I_body = I_body_sat
     I_body = I_body * 1e-7
     I_spin = 5.1e-7
     I_trans = 0

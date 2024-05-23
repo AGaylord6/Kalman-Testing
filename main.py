@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
     # create unscented kalman filter object
     # steps to simulate, timestep, state space dimension, measurement space dimension, measurement noise, process noise, true magnetic field, starting reaction wheel speed, filter type
-    ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([1, 0, 0]), np.array([0, 0, 0]), UKF)
+    # ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([1, 0, 0]), np.array([0, 0, 0]), UKF)
 
     # Our North West Up true magnetic field in stenson remick should be: 19.42900375, 1.74830615, 49.13746833 [micro Teslas]
     ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([19, 1.7, 49]), np.array([0, 0, 0]), UKF)
@@ -98,12 +98,12 @@ if __name__ == "__main__":
 
     # set measurement noise
     # magnetometer noise, gyroscope noise
-    ukf.ukf_setR(.25, .5)
     ukf.ukf_setR(.01, .01)
+    # ukf.ukf_setR(.01, .01)
 
     # create array of reaction wheel speed at each time step
     # max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
-    ideal_reaction_speeds = ukf.generateSpeeds(1300, -1300, ukf.n/2, 100, np.array([0, 0, 1]))
+    ideal_reaction_speeds = ukf.generateSpeeds(1300, -1300, ukf.n, 100, np.array([0, 1, 0]))
     # ideal_reaction_speeds = ukf.generateSpeeds(0,0, ukf.n, 100, np.array([0, 0, 1]))
     # print(ideal_reaction_speeds[:20])
 
@@ -112,10 +112,10 @@ if __name__ == "__main__":
     # print("state: ", ideal[:10])
 
     # set sensor noises
-    magNoises = np.random.normal(0, .001, (ukf.n, 3))
+    magNoises = np.random.normal(0, .05, (ukf.n, 3))
     gyroNoises = np.random.normal(0, .001, (ukf.n, 3))
 
-    plot = 2
+    plot = 1
 
     # generate data reading for each step 
     data = ukf.generateData(ideal, magNoises, gyroNoises, 0)
@@ -123,17 +123,23 @@ if __name__ == "__main__":
     # run our data through the specified kalman function (ukf)
     filtered = ukf.simulate(data, ideal_reaction_speeds)
 
+    print("ideal: ", ideal[:3])
+    print("data: ", data[:3])
+    print("filtered: ", filtered[:3])
+
     # take magnitudes of innovation innovation arrays
     innovationMags = np.array([np.linalg.norm(x) for x in ukf.innovations])
+
+    # inn1 = np.array([x[0] for x in ukf.innovations])
 
     # to get standard deviation, take sqrt of diagonal
     # divide by number of observations to get standard error of mean
     # get magnitude afterwards
-    innovationCovMags = np.array([np.linalg.norm(y / ukf.dim_mes) for y in np.array([np.sqrt(np.diag(x)) for x in ukf.innovationCovs])])
-    print(innovationCovMags[:3])
+    innovationCovMags = np.array([(np.linalg.norm(y)/ ukf.dim_mes) for y in np.array([np.sqrt(np.diag(x)) for x in ukf.innovationCovs])])
+    # print(innovationCovMags[:3])
 
     upper = innovationMags + 2 * innovationCovMags
-    lower = innovationCovMags - 2 * innovationCovMags
+    lower = innovationMags - 2 * innovationCovMags
 
     # plot_multiple_lines(np.array([innovationMags, innovationCovMags]), ["innovation magnitude", "covariance magnitude"], "innovation", 300, 200)
     plot_multiple_lines(np.array([innovationMags, upper, lower]), ["innovation magnitude", "upper sd", "lower sd"], "innovation", 300, 200)
