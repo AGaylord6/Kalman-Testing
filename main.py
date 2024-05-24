@@ -4,6 +4,8 @@ Author: Andrew Gaylord
 
 Main file for Kalman-Testing rep
 Sets up fake models to simulate CubeSat and compare results of different kalman filters
+Utilizes graphing.py for vizualizations of state and statistical tests
+Uses the Filter class from filter.py to represent a state estimation for a certain kalman filter
 
 '''
 
@@ -45,21 +47,12 @@ innovation (V) or residual: difference between a measurement and its prediction 
         3) whiteness (autocorrelation) test
 
 notes:
-EOMs are messed up. changed rw_config back to gamma and such
-    change I_trans from non-zero?
-
-must ensure quaternion is normalized
-
-issues:
-    how is B_true connected to our starting state + initial eoms progagation
-        need to check other B_trues and rotations about other axis (like y)
-    
-    what is orientation of simulation?? what are we enforcing with starting quaternion??
+    must ensure quaternion is normalized when output by EOMs
+    added innovation and innovation covariance to UKF_algorithm
 
 TODO:
     statistical tests
-    effiency test/graphs (read article)
-    plotting comparisons between filter/unfiltered
+    effiency test/graphs + speed testing (read article)
     figure out what to plot for 3D graphs (time dependent?)
 
 optional:
@@ -74,7 +67,7 @@ def signal_handler(sig, frame):
     '''
     signal_handler
 
-    closes all pyplot tabs
+    closes all pyplot tabs when CTRL+C is entered
     '''
 
     plt.close('all')
@@ -86,25 +79,23 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
 
     # create unscented kalman filter object
-    # steps to simulate, timestep, state space dimension, measurement space dimension, measurement noise, process noise, true magnetic field, starting reaction wheel speed, filter type
+    # parameters: # of steps to simulate, timestep, state space dimension, measurement space dimension, measurement noise, process noise, true magnetic field, starting reaction wheel speed, filter type
     # ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([1, 0, 0]), np.array([0, 0, 0]), UKF)
 
     # Our North West Up true magnetic field in stenson remick should be: 19.42900375, 1.74830615, 49.13746833 [micro Teslas]
     ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([19, 1.7, 49]), np.array([0, 0, 0]), UKF)
 
     # set process noise
-    # noise magnitude, k (see Estimation II article by Ian Reed)
+    # parameters: noise magnitude, k (see Estimation II article by Ian Reed)
     ukf.ukf_setQ(.01, 10)
 
     # set measurement noise
-    # magnetometer noise, gyroscope noise
+    # parameters: magnetometer noise, gyroscope noise
     ukf.ukf_setR(.01, .01)
-    # ukf.ukf_setR(.01, .01)
 
     # create array of reaction wheel speed at each time step
-    # max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
+    # parameters: max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
     ideal_reaction_speeds = ukf.generateSpeeds(1300, -1300, ukf.n, 100, np.array([0, 1, 0]))
-    # ideal_reaction_speeds = ukf.generateSpeeds(0,0, ukf.n, 100, np.array([0, 0, 1]))
     # print(ideal_reaction_speeds[:20])
 
     # find ideal state of cubesat through physics equations of motion
@@ -115,6 +106,7 @@ if __name__ == "__main__":
     magNoises = np.random.normal(0, .05, (ukf.n, 3))
     gyroNoises = np.random.normal(0, .001, (ukf.n, 3))
 
+    # 1 = plots + visualizer, 0 = visualizer only, 2 = none
     plot = 1
 
     # generate data reading for each step 
@@ -123,14 +115,12 @@ if __name__ == "__main__":
     # run our data through the specified kalman function (ukf)
     filtered = ukf.simulate(data, ideal_reaction_speeds)
 
-    print("ideal: ", ideal[:3])
-    print("data: ", data[:3])
-    print("filtered: ", filtered[:3])
+    # print("ideal: ", ideal[:3])
+    # print("data: ", data[:3])
+    # print("filtered: ", filtered[:3])
 
-    # take magnitudes of innovation innovation arrays
+    # find magnitudes of innovation arrays
     innovationMags = np.array([np.linalg.norm(x) for x in ukf.innovations])
-
-    # inn1 = np.array([x[0] for x in ukf.innovations])
 
     # to get standard deviation, take sqrt of diagonal
     # divide by number of observations to get standard error of mean
@@ -138,20 +128,12 @@ if __name__ == "__main__":
     innovationCovMags = np.array([(np.linalg.norm(y)/ ukf.dim_mes) for y in np.array([np.sqrt(np.diag(x)) for x in ukf.innovationCovs])])
     # print(innovationCovMags[:3])
 
+    # find upper and lower bounds of 2 * standard deviation
     upper = innovationMags + 2 * innovationCovMags
     lower = innovationMags - 2 * innovationCovMags
 
-    # plot_multiple_lines(np.array([innovationMags, innovationCovMags]), ["innovation magnitude", "covariance magnitude"], "innovation", 300, 200)
+    # plot to check whether innovation is centered on 0 and 95% of measurements are consistent with standard deviation
     plot_multiple_lines(np.array([innovationMags, upper, lower]), ["innovation magnitude", "upper sd", "lower sd"], "innovation", 300, 200)
-
-    
-    # # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)
-    # plot3DVectors(result, 111)
-
-    # plotData3D(data, 5, 111)
-
-    # ideal_xyz = [np.matmul(quaternion_rotation_matrix(x), np.array([1, 0, 0])) for x in ideal]
-    # plotData3D(ideal_xyz, 3, 111)
 
     if plot == 1:
         ukf.visualizeResults(filtered)
@@ -168,8 +150,10 @@ if __name__ == "__main__":
     # only show plot at end so they all show up
     plt.show()
 
-
-
-
-
+        
+    # # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)
+    # plot3DVectors(result, 111)
+    # plotData3D(data, 5, 111)
+    # ideal_xyz = [np.matmul(quaternion_rotation_matrix(x), np.array([1, 0, 0])) for x in ideal]
+    # plotData3D(ideal_xyz, 3, 111)
 
