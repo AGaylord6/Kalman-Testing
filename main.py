@@ -59,6 +59,7 @@ optional:
     more comprehensive plotting: wrappers, options, make part of Filter class
     flesh out 3D graphs more: colors, many at once (ideal, data, filtered)
     generate fake imu data using matlab functionality??
+    rewrite filter class to hold entire data sets?
 
 '''
 
