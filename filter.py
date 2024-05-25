@@ -3,7 +3,12 @@ filter.py
 Author: Andrew Gaylord
 
 contains filter class for an arbitrary kalman filter
-allows for easy initializiation, progagation, and testing
+object contains system info, initialized values, state values, and filter specifications
+class functions allow for easy initialization, propagation, data generation, simulation, and visualization
+
+TODO: 
+    add testing functionality
+    rewrite class attributes to store state/data/reaction wheel speeds for all n steps
 
 '''
 
@@ -13,10 +18,14 @@ from irishsat_ukf.simulator import *
 from irishsat_ukf.UKF_algorithm import *
 from irishsat_ukf.hfunc import *
 
+
 class Filter():
     def __init__ (self, n, dt, dim, dim_mes, r_mag, q_mag, B_true, reaction_speeds, kalmanMethod):
+        # number of steps to simulate
         self.n = n
+        # timestep between steps
         self.dt = dt
+        # dimension of state and measurement space
         self.dim = dim
         self.dim_mes = dim_mes
 
@@ -25,23 +34,26 @@ class Filter():
         # process noise
         self.Q = np.diag([q_mag] * dim)
 
+        # starting state (default is standard quaternion and no angular velocity)
         self.state = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        # enforce normalized quaternion
         self.state[:4] = normalize(self.state[:4])
-        # print("starting state: ", self.state)
+        # starting covariance (overrid by ukf_setQ)
         self.cov = np.identity(dim) * 5e-7
 
         # 2D array of n innovations and covariances
-        # self.innovations = np.array([np.zeros(dim_mes)] * n)
         self.innovations = np.zeros((n, dim_mes))
         self.innovationCovs = np.zeros((n, dim_mes, dim_mes))
 
+        # true magnetic field for simulation
         self.B_true = B_true
 
+        # 1x3 array of reaction wheel speeds
         self.reaction_speeds = reaction_speeds
-
+        # reaction wheel speed of last time step
         self.old_reaction_speeds = np.zeros(3)
-        # self.old_reaction_speeds = reaction_speeds
 
+        # what kalman filter to apply to this system
         self.kalmanMethod = kalmanMethod
 
 
@@ -87,7 +99,7 @@ class Filter():
             # multiply by bitset to get only proper axis
             result = indices * result
             ideal_reaction_speeds.append(result)
-
+            
         return np.array(ideal_reaction_speeds[:self.n])
 
 

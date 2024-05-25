@@ -2,12 +2,14 @@
 main.py
 Author: Andrew Gaylord
 
-Main file for Kalman-Testing rep
+Main file for Kalman-Testing repo
+
 Sets up fake models to simulate CubeSat and compare results of different kalman filters
 Utilizes graphing.py for vizualizations of state and statistical tests
-Uses the Filter class from filter.py to represent a state estimation for a certain kalman filter
+Uses the Filter class from filter.py to represent a state estimation model for a certain kalman filter
 
 '''
+
 
 import sys, os
 sys.path.extend([f'./{name}' for name in os.listdir(".") if os.path.isdir(name)])
@@ -24,6 +26,7 @@ import signal
 
 '''
 
+resources used:
 https://cs.adelaide.edu.au/~ianr/Teaching/Estimation/LectureNotes2.pdf
 https://github.com/FrancoisCarouge/Kalman
 https://www.researchgate.net/post/How_can_I_validate_the_Kalman_Filter_result
@@ -96,7 +99,7 @@ if __name__ == "__main__":
 
     # create array of reaction wheel speed at each time step
     # parameters: max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
-    ideal_reaction_speeds = ukf.generateSpeeds(1300, -1300, ukf.n, 100, np.array([0, 1, 0]))
+    ideal_reaction_speeds = ukf.generateSpeeds(1300, -1300, ukf.n/2, 100, np.array([0, 1, 0]))
     # print(ideal_reaction_speeds[:20])
 
     # find ideal state of cubesat through physics equations of motion

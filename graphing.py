@@ -7,6 +7,7 @@ can plot data, state (quaternion and angular velocity), and 3D vectors
 
 '''
 
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -159,18 +160,25 @@ def plot_xyz(data, title, x=0, y=0):
 
 def plotState_xyz(data, ideal=False):
     '''
-    plots our 7 dimensional state on 2 graphs: quaternion and angular velocity
-    ideal: true if top left, false if bottom middle
-    
+    plots IrishSat's 7 dimensional state (quaternion and angular velocity)
+    creates 2 graphs that show quaternion and angular velocity for all time steps
+
+    @params:
+        data: 2D array of states to be graphed
+        ideal: boolean value that signifies where to place graphs
+            true = top left, false = bottom middle
     '''
 
+    # separate quaternion and angular velocity from data array
     quaternions = np.array([data[0][:4]])
     velocities = np.array([data[0][4:]])
+
     for i in range(1, len(data)):
         quaternions = np.append(quaternions, np.array([data[i][:4]]), axis=0)
         velocities = np.append(velocities, np.array([data[i][4:]]), axis=0)
 
     if ideal:
+        # plot two graphs in top left
         plot_xyz(velocities, "Angular Velocity", 50, 0)
         plot_xyz(quaternions, "Ideal Quaternion", 0, 0)
     else:
@@ -179,9 +187,18 @@ def plotState_xyz(data, ideal=False):
 
 
 def plotData_xyz(data):
+    '''
+    plots 6 dimensional data
+    creates 2 graphs that show magnetic field and angular velocity for all time steps
 
+    @params:
+        data: 2D array of data readings (magnetometer and gyroscoped)
+    '''
+
+    # separate magnetometer and gyroscope data
     magData = np.array([data[0][:3]])
     gyroData = np.array([data[0][3:]])
+
     for i in range(1, len(data)):
         magData = np.append(magData, np.array([data[i][:3]]), axis=0)
         gyroData = np.append(gyroData, np.array([data[i][3:]]), axis=0)
