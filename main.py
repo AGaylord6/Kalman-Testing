@@ -57,20 +57,19 @@ TODO:
     statistical tests
     effiency test/graphs + speed testing (read article)
     figure out what to plot for 3D graphs (time dependent?)
+    rewrite filter class to hold entire data sets
+    rewrite visualization functions for coherency and wrap in filter class
 
 optional:
-    more comprehensive plotting: wrappers, options, make part of Filter class
+    more comprehensive plotting: wrappers, options
     flesh out 3D graphs more: colors, many at once (ideal, data, filtered)
     generate fake imu data using matlab functionality??
-    rewrite filter class to hold entire data sets?
 
 '''
 
 
 def signal_handler(sig, frame):
     '''
-    signal_handler
-
     closes all pyplot tabs when CTRL+C is entered
     '''
 
