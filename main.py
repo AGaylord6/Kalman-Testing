@@ -20,6 +20,7 @@ from irishsat_ukf.UKF_algorithm import *
 from irishsat_ukf.hfunc import *
 from filter import *
 from graphing import *
+from tests import *
 
 import matplotlib.pyplot as plt
 import signal
@@ -32,22 +33,6 @@ https://github.com/FrancoisCarouge/Kalman
 https://www.researchgate.net/post/How_can_I_validate_the_Kalman_Filter_result
 https://stats.stackexchange.com/questions/40466/how-can-i-debug-and-check-the-consistency-of-a-kalman-filter
 file:///C:/Users/andre/Downloads/WikibookonKalmanFilter.pdf
-
-one of the ways to check Kalman filters performance is to check for error covariance matrix P 
-to be converging. If it converges to + or - standard deviation of the estimated value, 
-it can be considered as a stable point. 
-calculate square of difference between estimated and real
-You can verify that the estimated state converges to the actual state. 
-The error covariance, P, must decrease.
-
-innovation (V) or residual: difference between a measurement and its prediction at time k
-    measures new info provided by adding another measurement in estimation
-    can be used to validate a measurement before adding to observation sequence
-
-    innovation tests: test that innovation has zero mean and white with cov S_k
-        1) check that it is consistent with its cov/within bounds--checks filter consistency
-        2) chi square test for unbiased 
-        3) whiteness (autocorrelation) test
 
 notes:
     must ensure quaternion is normalized when output by EOMs
@@ -98,7 +83,7 @@ if __name__ == "__main__":
 
     # create array of reaction wheel speed at each time step
     # parameters: max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
-    ideal_reaction_speeds = ukf.generateSpeeds(1300, -1300, ukf.n/2, 100, np.array([0, 1, 0]))
+    ideal_reaction_speeds = ukf.generateSpeeds(1500, -1500, ukf.n/2, 100, np.array([0, 1, 0]))
     # print(ideal_reaction_speeds[:20])
 
     # find ideal state of cubesat through physics equations of motion
@@ -106,11 +91,11 @@ if __name__ == "__main__":
     # print("state: ", ideal[:10])
 
     # set sensor noises
-    magNoises = np.random.normal(0, .05, (ukf.n, 3))
+    magNoises = np.random.normal(0, .035, (ukf.n, 3))
     gyroNoises = np.random.normal(0, .001, (ukf.n, 3))
 
     # 1 = plots + visualizer, 0 = visualizer only, 2 = none
-    plot = 1
+    plot = 2
 
     # generate data reading for each step 
     data = ukf.generateData(ideal, magNoises, gyroNoises, 0)
@@ -136,7 +121,9 @@ if __name__ == "__main__":
     lower = innovationMags - 2 * innovationCovMags
 
     # plot to check whether innovation is centered on 0 and 95% of measurements are consistent with standard deviation
-    plot_multiple_lines(np.array([innovationMags, upper, lower]), ["innovation magnitude", "upper sd", "lower sd"], "innovation", 300, 200)
+    # plot_multiple_lines(np.array([innovationMags, upper, lower]), ["innovation magnitude", "upper sd", "lower sd"], "innovation", 300, 200)
+    plot_multiple_lines(np.array([innovationMags]), ["innovation magnitude"], "innovation", 300, 200)
+
 
     if plot == 1:
         ukf.visualizeResults(filtered)
@@ -150,6 +137,12 @@ if __name__ == "__main__":
         # ukf.visualizeResults(ideal)
         ukf.visualizeResults(filtered)
 
+
+    print(innovationTest(ukf.innovations, ukf.innovationCovs, ukf.dim_mes))
+
+    print(autocorrelation2D(ukf.innovations)[0])
+
+
     # only show plot at end so they all show up
     plt.show()
 
@@ -159,4 +152,3 @@ if __name__ == "__main__":
     # plotData3D(data, 5, 111)
     # ideal_xyz = [np.matmul(quaternion_rotation_matrix(x), np.array([1, 0, 0])) for x in ideal]
     # plotData3D(ideal_xyz, 3, 111)
-
