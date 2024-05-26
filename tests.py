@@ -21,8 +21,8 @@ innovation (V) or residual: difference between a measurement and its prediction 
 
     innovation tests: test that innovation has zero mean and white with cov S_k
         1) check that it is consistent with its cov/within bounds--checks filter consistency
-        2) chi square test for unbiased 
-        3) whiteness (autocorrelation) test
+        2) chi square test for unbiased (normalized innovation squared)
+        3) whiteness test (autocorrelation)
 
 '''
 
@@ -95,6 +95,44 @@ def plotOrientationInnovations(innovations, innovationCovs):
 # function that returns true if the innovations are unbiased
 def unbiasedTest(innovations):
     return np.mean(innovations) == 0
+
+# calculates and plots normalised innovation squared
+def plotInnovationSquared(innovations, innovationCovs):
+    # calculate normalised innovation squared
+    # normInnovSquared = np.atleast_2d(innovations[:, 0]).T.conj() * np.linalg.inv(innovationCovs) * innovations[:, 0]
+    # normInnovSquared = innovations[:, 0] * np.linalg.inv(innovationCovs) * innovations[:, 0]
+    # normInnovSquared = innovations * np.linalg.inv(innovationCovs) * innovations
+    normInnovSquared = np.zeros((len(innovations), 6, 6))
+
+    for i in range(len(innovations)):
+        normInnovSquared[i] = innovations[i] * np.linalg.inv(innovationCovs[i]) * innovations[i]
+
+    # find normalised innovation squared all innovations
+    squares = np.zeros((len(innovations), 6))
+    for i in range(len(innovations)):
+        squares[i] = innovations[i].T * np.diag(np.linalg.inv(innovationCovs[i])) * innovations[i]
+
+    # print(squares)
+    # normInnovations = np.array([np.linalg.norm(x) for x in innovations])
+    # normInnovationCovs = innovationCovToStd(innovationCovs, 6)
+    # normInnovationsSquared = normInnovations ** 2 / normInnovationCovs
+
+    # plot normalised innovation squared
+    plot_multiple_lines(np.array([squares[:, 0]]), ["normalised innovation squared"], "orientation 1", 200, 200)
+    plot_multiple_lines(np.array([squares[:, 1]]), ["normalised innovation squared"], "orientation 2", 300, 200)
+    plot_multiple_lines(np.array([squares[:, 2]]), ["normalised innovation squared"], "orientation 3", 400, 200)
+
+
+    # find sum of normalised innovations squared
+    sumInnovSquared = np.sum(squares, axis=0)
+
+    print("Sum of squared innovations: ", sumInnovSquared)
+
+    # find confidence interval for chi square test for unbaisedness
+    # chi squared interval with 6 degrees of freedom
+    # 95% confidence interval is 1.237 to 13.277
+    # 99% confidence interval is 1.237 to 17.535
+    print("Chi squared test: ", sumInnovSquared / len(innovations))
 
 
 

@@ -71,7 +71,7 @@ if __name__ == "__main__":
     # ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([1, 0, 0]), np.array([0, 0, 0]), UKF)
 
     # Our North West Up true magnetic field in stenson remick should be: 19.42900375, 1.74830615, 49.13746833 [micro Teslas]
-    ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([19, 1.7, 49]), np.array([0, 0, 0]), UKF)
+    ukf = Filter(100, 0.1, 7, 6, 0, 0, np.array([19, 1.7, 49]), np.array([0, 0, 0]), UKF)
 
     # set process noise
     # parameters: noise magnitude, k (see Estimation II article by Ian Reed)
@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     # create array of reaction wheel speed at each time step
     # parameters: max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
-    ideal_reaction_speeds = ukf.generateSpeeds(2000, -2000, ukf.n, 100, np.array([0, 1, 0]))
+    ideal_reaction_speeds = ukf.generateSpeeds(3000, -3000, ukf.n, 100, np.array([0, 1, 0]))
     # print(ideal_reaction_speeds[:20])
 
     # find ideal state of cubesat through physics equations of motion
@@ -107,7 +107,8 @@ if __name__ == "__main__":
     # print("data: ", data[:3])
     # print("filtered: ", filtered[:3])
 
-    plotInnovations(ukf.innovations, ukf.innovationCovs)
+
+    plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
 
 
     if plot == 1:
@@ -117,6 +118,7 @@ if __name__ == "__main__":
         plotData_xyz(data)
         plotState_xyz(filtered, False)
 
+        plotInnovations(ukf.innovations, ukf.innovationCovs)
 
     elif plot == 0:
         # ukf.visualizeResults(ideal)
