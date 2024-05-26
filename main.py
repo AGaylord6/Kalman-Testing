@@ -41,9 +41,9 @@ notes:
 TODO:
     statistical tests
     effiency test/graphs + speed testing (read article)
-    figure out what to plot for 3D graphs (time dependent?)
     rewrite filter class to hold entire data sets
-    rewrite visualization functions for coherency and wrap in filter class
+    rewrite visualization/plotting functions for coherency and wrap in filter class
+    which method is correct for normalized innovation covariance? (and which CI?) (see tests.py)
 
 optional:
     more comprehensive plotting: wrappers, options
@@ -76,10 +76,16 @@ if __name__ == "__main__":
     # set process noise
     # parameters: noise magnitude, k (see Estimation II article by Ian Reed)
     ukf.ukf_setQ(.001, 10)
+    # good for test #2 with df = 600
+    ukf.ukf_setQ(.00025, 10)
+
 
     # set measurement noise
     # parameters: magnetometer noise, gyroscope noise
     ukf.ukf_setR(.001, .01)
+    # good for test #2 with df = 600
+    ukf.ukf_setR(.00025, .001)
+
 
     # create array of reaction wheel speed at each time step
     # parameters: max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate

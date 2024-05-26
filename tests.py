@@ -29,6 +29,8 @@ innovation (V) or residual: difference between a measurement and its prediction 
 import numpy as np
 from graphing import *
 from filter import *
+from scipy.stats import chi2
+
 
 
 # function that returns true if 95% of the innovations are within 2 standard deviations of the mean
@@ -98,41 +100,73 @@ def unbiasedTest(innovations):
 
 # calculates and plots normalised innovation squared
 def plotInnovationSquared(innovations, innovationCovs):
-    # calculate normalised innovation squared
     # normInnovSquared = np.atleast_2d(innovations[:, 0]).T.conj() * np.linalg.inv(innovationCovs) * innovations[:, 0]
     # normInnovSquared = innovations[:, 0] * np.linalg.inv(innovationCovs) * innovations[:, 0]
     # normInnovSquared = innovations * np.linalg.inv(innovationCovs) * innovations
+
+    # calculate normalised innovation squared of all innovations combined
     normInnovSquared = np.zeros((len(innovations), 6, 6))
 
     for i in range(len(innovations)):
         normInnovSquared[i] = innovations[i] * np.linalg.inv(innovationCovs[i]) * innovations[i]
 
-    # find normalised innovation squared all innovations
-    squares = np.zeros((len(innovations), 6))
+    # normalize the diagonal of the 6x6 matrix
+    # normInnovSquared = np.array([np.linalg.norm(np.diag(x)) for x in normInnovSquared])
+    normInnovSquared = np.array([np.linalg.norm(x) for x in normInnovSquared])
+
+    # sum of normalised innovation squared combined
+    print("combined sum: ", np.sum(normInnovSquared))
+
+    plot_multiple_lines(np.array([normInnovSquared]), ["normalised innovation squared"], "innovation squared combined", 100, 100)
+
+
+    # find normalised innovation squared all innovations separately
+    # the innovations squared should each be chi squared distributed with 6 degrees of freedom
+    squares = np.zeros((len(innovations), len(innovations[0])))
     for i in range(len(innovations)):
         squares[i] = innovations[i].T * np.diag(np.linalg.inv(innovationCovs[i])) * innovations[i]
-
-    # print(squares)
-    # normInnovations = np.array([np.linalg.norm(x) for x in innovations])
-    # normInnovationCovs = innovationCovToStd(innovationCovs, 6)
-    # normInnovationsSquared = normInnovations ** 2 / normInnovationCovs
 
     # plot normalised innovation squared
     plot_multiple_lines(np.array([squares[:, 0]]), ["normalised innovation squared"], "orientation 1", 200, 200)
     plot_multiple_lines(np.array([squares[:, 1]]), ["normalised innovation squared"], "orientation 2", 300, 200)
     plot_multiple_lines(np.array([squares[:, 2]]), ["normalised innovation squared"], "orientation 3", 400, 200)
-
+    plot_multiple_lines(np.array([squares[:, 3]]), ["normalised innovation squared"], "velocity 3", 500, 200)
+    plot_multiple_lines(np.array([squares[:, 4]]), ["normalised innovation squared"], "velocity 3", 600, 200)
+    plot_multiple_lines(np.array([squares[:, 5]]), ["normalised innovation squared"], "velocity 3", 700, 200)
 
     # find sum of normalised innovations squared
     sumInnovSquared = np.sum(squares, axis=0)
 
-    print("Sum of squared innovations: ", sumInnovSquared)
+    print("Sum of separate squared innovations: ", sumInnovSquared)
+
+    print("sum of seperate combined squared innovations: ", np.sum(sumInnovSquared))
+
+    # because innovation is ergodic, we can find sample mean as a moving average of 1 run instead using N independent samples 
+    aveInnovSquared = np.mean(squares, axis=0)
+
+    # print("Averages of separate squared innovations: ", aveInnovSquared)
 
     # find confidence interval for chi square test for unbaisedness
-    # chi squared interval with 6 degrees of freedom
-    # 95% confidence interval is 1.237 to 13.277
-    # 99% confidence interval is 1.237 to 17.535
-    print("Chi squared test: ", sumInnovSquared / len(innovations))
+    # TODO: should chi squared interval have 6, 100, or 600 degrees of freedom??
+    #   article claims that it should be n * m, where n is number of observations and m is number of measurements
+
+    # interval that sum must be within
+    # or could divide by number of observations, and average must be within interval divided by n too
+    # (https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chi2.html)
+    interval = chi2.interval(0.95, 100)
+
+    print("interval with " + str(len(innovations)) + " df: ", chi2.interval(0.95, len(innovations)))
+    print("interval with n*m = " + str(len(innovations[0])*len(innovations)) + " df: ", chi2.interval(0.95, len(innovations[0])*len(innovations)))
+
+
+    # sum for each innovation must be within 95% confidence interval
+    #   otherwise, infer whether combined noise is too large/too small
+
+    # if too small (lower end of interval) then the filter is too confident in its measurements (??)
+    #       i.e. measurement/process noise combined is too large/overestimated
+    # if too large (upper end of interval), then the filter is not confident enough in its measurements (??)
+    #       i.e. measurement/process noise combined is too small/underestimated
+
 
 
 
