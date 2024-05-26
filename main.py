@@ -75,15 +75,15 @@ if __name__ == "__main__":
 
     # set process noise
     # parameters: noise magnitude, k (see Estimation II article by Ian Reed)
-    ukf.ukf_setQ(.01, 10)
+    ukf.ukf_setQ(.001, 10)
 
     # set measurement noise
     # parameters: magnetometer noise, gyroscope noise
-    ukf.ukf_setR(.01, .01)
+    ukf.ukf_setR(.001, .01)
 
     # create array of reaction wheel speed at each time step
     # parameters: max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
-    ideal_reaction_speeds = ukf.generateSpeeds(1500, -1500, ukf.n/2, 100, np.array([0, 1, 0]))
+    ideal_reaction_speeds = ukf.generateSpeeds(2000, -2000, ukf.n, 100, np.array([0, 1, 0]))
     # print(ideal_reaction_speeds[:20])
 
     # find ideal state of cubesat through physics equations of motion
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
     # set sensor noises
     magNoises = np.random.normal(0, .035, (ukf.n, 3))
-    gyroNoises = np.random.normal(0, .001, (ukf.n, 3))
+    gyroNoises = np.random.normal(0, .01, (ukf.n, 3))
 
     # 1 = plots + visualizer, 0 = visualizer only, 2 = none
     plot = 2
@@ -107,22 +107,7 @@ if __name__ == "__main__":
     # print("data: ", data[:3])
     # print("filtered: ", filtered[:3])
 
-    # find magnitudes of innovation arrays
-    innovationMags = np.array([np.linalg.norm(x) for x in ukf.innovations])
-
-    # to get standard deviation, take sqrt of diagonal
-    # divide by number of observations to get standard error of mean
-    # get magnitude afterwards
-    innovationCovMags = np.array([(np.linalg.norm(y)/ ukf.dim_mes) for y in np.array([np.sqrt(np.diag(x)) for x in ukf.innovationCovs])])
-    # print(innovationCovMags[:3])
-
-    # find upper and lower bounds of 2 * standard deviation
-    upper = innovationMags + 2 * innovationCovMags
-    lower = innovationMags - 2 * innovationCovMags
-
-    # plot to check whether innovation is centered on 0 and 95% of measurements are consistent with standard deviation
-    # plot_multiple_lines(np.array([innovationMags, upper, lower]), ["innovation magnitude", "upper sd", "lower sd"], "innovation", 300, 200)
-    plot_multiple_lines(np.array([innovationMags]), ["innovation magnitude"], "innovation", 300, 200)
+    plotInnovations(ukf.innovations, ukf.innovationCovs)
 
 
     if plot == 1:
@@ -138,9 +123,9 @@ if __name__ == "__main__":
         ukf.visualizeResults(filtered)
 
 
-    print(innovationTest(ukf.innovations, ukf.innovationCovs, ukf.dim_mes))
+    # print(innovationTest(ukf.innovations, ukf.innovationCovs, ukf.dim_mes))
 
-    print(autocorrelation2D(ukf.innovations)[0])
+    # print(autocorrelation2D(ukf.innovations)[0])
 
 
     # only show plot at end so they all show up

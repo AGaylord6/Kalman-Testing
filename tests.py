@@ -45,6 +45,52 @@ def innovationTest(innovations, innovationCovs, dim_mes):
     return np.sum((innovationMags < upper) & (innovationMags > lower)) / len(innovationMags) > .95
 
 
+def plotInnovations(innovations, innovationCovs):
+    # method for plotting each innovation and their respective standard deviations on separate graphs
+    # for i in range(len(innovations[0])):
+    #     sds =  np.array([np.sqrt(np.diag(x)) for x in innovationCovs])
+    #     plot_multiple_lines(np.array([innovations[:, i], innovations[:, i] + 2 * sds[:, i], innovations[:, i] - 2 * sds[:, i]]), ["innovation magnitude", "upper sd", "lower sd"], "innovation " + str(i+1), 100 + i*50, 100 + i*50)
+
+    # method using magnitude of whole innovation array
+    # find magnitudes of innovation arrays
+    # innovationMags = np.array([np.linalg.norm(x) for x in ukf.innovations])
+
+    # to get standard deviation, take sqrt of diagonal
+    # divide by number of observations to get standard error of mean
+    # get magnitude afterwards
+    # innovationCovMags = np.array([(np.linalg.norm(y)/ ukf.dim_mes) for y in np.array([np.sqrt(np.diag(x)) for x in ukf.innovationCovs])])
+
+    # find upper and lower bounds of 2 * standard deviation
+    # upper = innovationMags + 2 * innovationCovMags
+    # lower = innovationMags - 2 * innovationCovMags
+
+    # plot to check whether innovation is centered on 0 and 95% of measurements are consistent with standard deviation
+    # plot_multiple_lines(np.array([innovationMags, upper, lower]), ["innovation magnitude", "upper sd", "lower sd"], "innovation", 300, 200)
+
+
+    # plot orientation and velocity innovations on separate graphs
+    plotVelocityInnovations(innovations, innovationCovs)
+    plotOrientationInnovations(innovations, innovationCovs)
+
+# plot the last 3 innovations and their respective standard deviations on 1 graph
+def plotVelocityInnovations(innovations, innovationCovs):
+    innovations = innovations[1:]
+    innovationCovs = innovationCovs[1:]
+
+    sds =  np.array([np.sqrt(np.diag(x)) for x in innovationCovs])
+    plot_multiple_lines(np.array([innovations[:, 3], innovations[:, 3] + 2 * sds[:, 3], innovations[:, 3] - 2 * sds[:, 3], innovations[:, 4], innovations[:, 4] + 2 * sds[:, 4], innovations[:, 4] - 2 * sds[:, 4], innovations[:, 5], innovations[:, 5] + 2 * sds[:, 5], innovations[:, 5] - 2 * sds[:, 5]]), ["velocity 1", "upper 1", "lower 1", "velocity 2", "upper 2", "lower 2", "velocity 3", "upper 3", "lower 3"], "innovation magnitudes", 900, 100)
+    
+# plot the first 3 innovations on their respective standard deviations on 1 graph
+def plotOrientationInnovations(innovations, innovationCovs):
+    innovations = innovations[1:]
+    innovationCovs = innovationCovs[1:]
+
+    sds =  np.array([np.sqrt(np.diag(x)) for x in innovationCovs])
+    plot_multiple_lines(np.array([innovations[:, 0], innovations[:, 0] + 2 * sds[:, 0], innovations[:, 0] - 2 * sds[:, 0], innovations[:, 1], innovations[:, 1] + 2 * sds[:, 1], innovations[:, 1] - 2 * sds[:, 1], innovations[:, 2], innovations[:, 2] + 2 * sds[:, 2], innovations[:, 2] - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "innovation magnitudes", 100, 100)
+
+
+
+
 # test #2 for unbiasedness
 # function that returns true if the innovations are unbiased
 def unbiasedTest(innovations):
