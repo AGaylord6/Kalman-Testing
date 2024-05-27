@@ -39,11 +39,11 @@ notes:
     added innovation and innovation covariance to UKF_algorithm
 
 TODO:
-    statistical tests
-    effiency test/graphs + speed testing (read article)
+    statistical tests, effiency test/graphs + speed testing (read article)
     rewrite filter class to hold entire data sets
-    rewrite visualization/plotting functions for coherency and wrap in filter class
+    rewrite visualization/plotting functions for coherency and wrap in filter class (plot all 3 on 1 graph with different line types) (see graphing.py)
     which method is correct for normalized innovation covariance? (and which CI?) (see tests.py)
+        should bound be added to measurement, 0, or average?
 
 optional:
     more comprehensive plotting: wrappers, options
@@ -114,7 +114,8 @@ if __name__ == "__main__":
     # print("filtered: ", filtered[:3])
 
 
-    plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
+    # plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
+    plotAutocorrelation(ukf.innovations, ukf.innovationCovs)
 
 
     if plot == 1:

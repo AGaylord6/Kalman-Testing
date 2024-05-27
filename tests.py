@@ -30,7 +30,7 @@ import numpy as np
 from graphing import *
 from filter import *
 from scipy.stats import chi2
-
+import scipy.signal as signal
 
 
 # function that returns true if 95% of the innovations are within 2 standard deviations of the mean
@@ -63,6 +63,7 @@ def plotInnovations(innovations, innovationCovs):
     # innovationCovMags = np.array([(np.linalg.norm(y)/ ukf.dim_mes) for y in np.array([np.sqrt(np.diag(x)) for x in ukf.innovationCovs])])
 
     # find upper and lower bounds of 2 * standard deviation
+    # NOTE: should 2 * bound be added to mean, or 0??
     # upper = innovationMags + 2 * innovationCovMags
     # lower = innovationMags - 2 * innovationCovMags
 
@@ -142,9 +143,7 @@ def plotInnovationSquared(innovations, innovationCovs):
     print("sum of seperate combined squared innovations: ", np.sum(sumInnovSquared))
 
     # because innovation is ergodic, we can find sample mean as a moving average of 1 run instead using N independent samples 
-    aveInnovSquared = np.mean(squares, axis=0)
-
-    # print("Averages of separate squared innovations: ", aveInnovSquared)
+    # print("Averages of separate squared innovations: ", np.mean(squares, axis=0))
 
     # find confidence interval for chi square test for unbaisedness
     # TODO: should chi squared interval have 6, 100, or 600 degrees of freedom??
@@ -163,11 +162,55 @@ def plotInnovationSquared(innovations, innovationCovs):
     #   otherwise, infer whether combined noise is too large/too small
 
     # if too small (lower end of interval) then the filter is too confident in its measurements (??)
-    #       i.e. measurement/process noise combined is too large/overestimated
+    #       i.e. measurement/process noise combined is too large/overestimated (facts)
     # if too large (upper end of interval), then the filter is not confident enough in its measurements (??)
     #       i.e. measurement/process noise combined is too small/underestimated
 
+    # note: if the sum of the normalised innovation squared is within the confidence interval, then the filter is unbiased
+    # note: If the ratio of process to measurement noise is too low the innovation sequence becomes correlated
+    # absolute value of noises may be tuned to pass chi square test
 
+    # tuning may be more sensitive to changes in measurement/process noise if one affects orientation instead of just velocity
+
+
+# test #3 for whiteness (autocorrelation)
+# function that finds and plots normalised autocorrelation for each innovation sequence in a 2D array
+def plotAutocorrelation(innovations, innovationCovs):
+
+    n = len(innovations)
+
+    r = np.correlate(innovations[:, 3], innovations[:, 3], mode='full')
+
+    # get second half of autocorration bc it starts at negative instead of 0
+    # normalize by dividing by the first element of the positive autocorrelation
+    r = r[n:2*n-1]
+
+    r = r / r[0]
+
+
+    lower = np.array([-2 / np.sqrt(n)] * (n-1))
+
+    upper = np.array([2 / np.sqrt(n)] * (n-1))
+
+    plot_multiple_lines(np.array([r, lower, upper]), ["autocorrelation", "lower sd", "upper sd"], "autocorrelation 1", 100, 100)
+
+    # check if 95% of the values in r fall with the upper and lower bounds
+    print("95% of values within bounds: ", np.sum((r < upper) & (r > lower)) / len(r) > .95)
+
+
+# find the normalized autocorrelation for an array of residuals/innovations
+def autocorrelation(innovations):
+    # find the mean of the innovations
+    mean = np.mean(innovations)
+
+    # find the autocorrelation of the innovations
+    autocorrelation = np.correlate(innovations - mean, innovations - mean, mode='full') / (np.var(innovations) * len(innovations))
+
+    return autocorrelation
+
+# function that returns true if the innovations are white
+def whiteTest(innovations):
+    return np.allclose(autocorrelation(innovations), 0, atol=1e-2)
 
 
 # function that returns true if the error covariance matrix P is converging
@@ -180,20 +223,7 @@ def innovationCovToStd(innovationCovs, dim_mes):
 
 
 
-# function that finds normalised autocorrelation for each innovation sequence in a 2D array
-def autocorrelation2D(innovations):
-    return np.array([autocorrelation(x) for x in innovations])
-# 
-# function that plots a 2D array of autocorrelations
-def plotAutocorrelation2D(innovations):
-    plot_multiple_lines(autocorrelation2D(innovations), ["autocorrelation"], "autocorrelation", 300, 200)
-# 
-def autocorrelation(innovations):
-    return np.correlate(innovations, innovations, mode='full') / np.linalg.norm(innovations)
 
-# function that returns true if the innovations are white
-def whiteTest(innovations):
-    return np.allclose(autocorrelation(innovations), 0, atol=1e-2)
 
 
 
