@@ -63,14 +63,14 @@ def plotInnovations(innovations, innovationCovs):
     # innovationCovMags = np.array([(np.linalg.norm(y)/ ukf.dim_mes) for y in np.array([np.sqrt(np.diag(x)) for x in ukf.innovationCovs])])
 
     # find upper and lower bounds of 2 * standard deviation
-    # NOTE: should 2 * bound be added to mean, or 0??
     # upper = innovationMags + 2 * innovationCovMags
     # lower = innovationMags - 2 * innovationCovMags
 
     # plot to check whether innovation is centered on 0 and 95% of measurements are consistent with standard deviation
     # plot_multiple_lines(np.array([innovationMags, upper, lower]), ["innovation magnitude", "upper sd", "lower sd"], "innovation", 300, 200)
 
-
+    print("Test #1: for innovation consistency, 95% of innovations must be within confidence interval bounds")
+    
     # plot orientation and velocity innovations on separate graphs
     plotVelocityInnovations(innovations, innovationCovs)
     plotOrientationInnovations(innovations, innovationCovs)
@@ -81,7 +81,10 @@ def plotVelocityInnovations(innovations, innovationCovs):
     innovationCovs = innovationCovs[1:]
 
     sds =  np.array([np.sqrt(np.diag(x)) for x in innovationCovs])
-    plot_multiple_lines(np.array([innovations[:, 3], innovations[:, 3] + 2 * sds[:, 3], innovations[:, 3] - 2 * sds[:, 3], innovations[:, 4], innovations[:, 4] + 2 * sds[:, 4], innovations[:, 4] - 2 * sds[:, 4], innovations[:, 5], innovations[:, 5] + 2 * sds[:, 5], innovations[:, 5] - 2 * sds[:, 5]]), ["velocity 1", "upper 1", "lower 1", "velocity 2", "upper 2", "lower 2", "velocity 3", "upper 3", "lower 3"], "innovation magnitudes", 900, 100)
+    # NOTE: should 2 * bound be added to mean, or 0??
+    # plot_multiple_lines(np.array([innovations[:, 3], innovations[:, 3] + 2 * sds[:, 3], innovations[:, 3] - 2 * sds[:, 3], innovations[:, 4], innovations[:, 4] + 2 * sds[:, 4], innovations[:, 4] - 2 * sds[:, 4], innovations[:, 5], innovations[:, 5] + 2 * sds[:, 5], innovations[:, 5] - 2 * sds[:, 5]]), ["velocity 1", "upper 1", "lower 1", "velocity 2", "upper 2", "lower 2", "velocity 3", "upper 3", "lower 3"], "innovation magnitudes", 900, 100)
+    plot_multiple_lines(np.array([innovations[:, 3], 2 * sds[:, 3], - 2 * sds[:, 3], innovations[:, 4], 2 * sds[:, 4], - 2 * sds[:, 4], innovations[:, 5], 2 * sds[:, 5], - 2 * sds[:, 5]]), ["velocity 1", "upper 1", "lower 1", "velocity 2", "upper 2", "lower 2", "velocity 3", "upper 3", "lower 3"], "velocity innovation magnitudes", 900, 100)
+    
     
 # plot the first 3 innovations on their respective standard deviations on 1 graph
 def plotOrientationInnovations(innovations, innovationCovs):
@@ -89,21 +92,25 @@ def plotOrientationInnovations(innovations, innovationCovs):
     innovationCovs = innovationCovs[1:]
 
     sds =  np.array([np.sqrt(np.diag(x)) for x in innovationCovs])
-    plot_multiple_lines(np.array([innovations[:, 0], innovations[:, 0] + 2 * sds[:, 0], innovations[:, 0] - 2 * sds[:, 0], innovations[:, 1], innovations[:, 1] + 2 * sds[:, 1], innovations[:, 1] - 2 * sds[:, 1], innovations[:, 2], innovations[:, 2] + 2 * sds[:, 2], innovations[:, 2] - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "innovation magnitudes", 100, 100)
+    # NOTE: should 2 * bound be added to mean, or 0??
+    # plot_multiple_lines(np.array([innovations[:, 0], innovations[:, 0] + 2 * sds[:, 0], innovations[:, 0] - 2 * sds[:, 0], innovations[:, 1], innovations[:, 1] + 2 * sds[:, 1], innovations[:, 1] - 2 * sds[:, 1], innovations[:, 2], innovations[:, 2] + 2 * sds[:, 2], innovations[:, 2] - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "orientation innovation magnitudes", 100, 100)
+    plot_multiple_lines(np.array([innovations[:, 0], 2 * sds[:, 0], - 2 * sds[:, 0], innovations[:, 1], 2 * sds[:, 1], - 2 * sds[:, 1], innovations[:, 2], 2 * sds[:, 2], - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "orientation innovation magnitudes", 100, 100)
+
 
 
 
 
 # test #2 for unbiasedness
 # function that returns true if the innovations are unbiased
-def unbiasedTest(innovations):
-    return np.mean(innovations) == 0
 
 # calculates and plots normalised innovation squared
 def plotInnovationSquared(innovations, innovationCovs):
     # normInnovSquared = np.atleast_2d(innovations[:, 0]).T.conj() * np.linalg.inv(innovationCovs) * innovations[:, 0]
     # normInnovSquared = innovations[:, 0] * np.linalg.inv(innovationCovs) * innovations[:, 0]
     # normInnovSquared = innovations * np.linalg.inv(innovationCovs) * innovations
+
+    print("Test #2: for unbiasedness, the sum of the normalised innovations squared must be within confidence interval bounds")
+    print("MORE INFO NEEDED")
 
     # calculate normalised innovation squared of all innovations combined
     normInnovSquared = np.zeros((len(innovations), 6, 6))
@@ -167,7 +174,6 @@ def plotInnovationSquared(innovations, innovationCovs):
     #       i.e. measurement/process noise combined is too small/underestimated
 
     # note: if the sum of the normalised innovation squared is within the confidence interval, then the filter is unbiased
-    # note: If the ratio of process to measurement noise is too low the innovation sequence becomes correlated
     # absolute value of noises may be tuned to pass chi square test
 
     # tuning may be more sensitive to changes in measurement/process noise if one affects orientation instead of just velocity
@@ -175,27 +181,47 @@ def plotInnovationSquared(innovations, innovationCovs):
 
 # test #3 for whiteness (autocorrelation)
 # function that finds and plots normalised autocorrelation for each innovation sequence in a 2D array
-def plotAutocorrelation(innovations, innovationCovs):
+def plotAutocorrelation(innovations):
+
+    # analyze for time dependency: can mean over/underestimation of process/measurement noise
+    # ideally, autocorrelation for each var should be within 95% of confidence interval
+    print("Analyze autocorrelation of innovations:")
+    print("if there is time correlation (i.e. not randomly distributed around 0), then test for whiteness fails")
+    print("process/measurement noise may be too high or too low")
 
     n = len(innovations)
 
-    r = np.correlate(innovations[:, 3], innovations[:, 3], mode='full')
+    correlations = np.zeros((6, n-1))
 
-    # get second half of autocorration bc it starts at negative instead of 0
-    # normalize by dividing by the first element of the positive autocorrelation
-    r = r[n:2*n-1]
-
-    r = r / r[0]
-
-
+    # set bounds for 95% confidence interval
     lower = np.array([-2 / np.sqrt(n)] * (n-1))
-
     upper = np.array([2 / np.sqrt(n)] * (n-1))
 
-    plot_multiple_lines(np.array([r, lower, upper]), ["autocorrelation", "lower sd", "upper sd"], "autocorrelation 1", 100, 100)
+    for i in range(len(innovations[0])):
+        # find autocorrelation of each innovation
+        # basically, autocorrelation represents the correlation between a time series and its own lagged values
+        r = np.correlate(innovations[:, i], innovations[:, i], mode='full')
+        
+        # get second half of autocorration bc it starts at negative instead of 0
+        r = r[n:2*n-1]
 
-    # check if 95% of the values in r fall with the upper and lower bounds
-    print("95% of values within bounds: ", np.sum((r < upper) & (r > lower)) / len(r) > .95)
+        # normalize by dividing by the first element of the positive autocorrelation
+        r = r / r[0]
+
+        # check if 95% of the values in r fall with the upper and lower bounds
+        print("95% of autocorrelation {} with 95% bounds: {}".format(i+1, np.sum((r < upper) & (r > lower)) / len(r) > .95))
+
+        correlations[i] = r
+
+    # plot autocorrelation for orientation innovations
+    plot_multiple_lines(np.array([correlations[0], correlations[1], correlations[2], lower, upper]), ["auto 1", "auto 2", "auto 3", "lower sd", "upper sd"], "orientation autocorrelations", 100, 100)
+
+    # plot autocorrelation for velocity innovations
+    plot_multiple_lines(np.array([correlations[3], correlations[4], correlations[5], lower, upper]), ["auto 4", "auto 5", "auto 6", "lower sd", "upper sd"], "orientation autocorrelations", 600, 100)
+
+
+
+
 
 
 # find the normalized autocorrelation for an array of residuals/innovations
@@ -228,8 +254,8 @@ def innovationCovToStd(innovationCovs, dim_mes):
 
 
 # function that returns true if the innovations are consistent with their covariance
-def consistentTest(innovations, innovationCovs):
-    return innovationTest(innovations, innovationCovs, 6) and whiteTest(innovations) and unbiasedTest(innovations)
+# def consistentTest(innovations, innovationCovs):
+    # return innovationTest(innovations, innovationCovs, 6) and whiteTest(innovations) and unbiasedTest(innovations)
 
 # function that finds normalised innovation and moving average
 def movingAverage(innovations, window):

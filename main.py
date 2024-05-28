@@ -44,11 +44,13 @@ TODO:
     rewrite visualization/plotting functions for coherency and wrap in filter class (plot all 3 on 1 graph with different line types) (see graphing.py)
     which method is correct for normalized innovation covariance? (and which CI?) (see tests.py)
         should bound be added to measurement, 0, or average?
+    print output to file??
 
 optional:
     more comprehensive plotting: wrappers, options
     flesh out 3D graphs more: colors, many at once (ideal, data, filtered)
     generate fake imu data using matlab functionality??
+    change innovation plots so that upper and lower bounds are same color
 
 '''
 
@@ -114,8 +116,9 @@ if __name__ == "__main__":
     # print("filtered: ", filtered[:3])
 
 
+    # plotInnovations(ukf.innovations, ukf.innovationCovs)
     # plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
-    plotAutocorrelation(ukf.innovations, ukf.innovationCovs)
+    plotAutocorrelation(ukf.innovations)
 
 
     if plot == 1:
@@ -125,7 +128,6 @@ if __name__ == "__main__":
         plotData_xyz(data)
         plotState_xyz(filtered, False)
 
-        plotInnovations(ukf.innovations, ukf.innovationCovs)
 
     elif plot == 0:
         # ukf.visualizeResults(ideal)
