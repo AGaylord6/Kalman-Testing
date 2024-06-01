@@ -70,6 +70,7 @@ def plotInnovations(innovations, innovationCovs):
     # plot_multiple_lines(np.array([innovationMags, upper, lower]), ["innovation magnitude", "upper sd", "lower sd"], "innovation", 300, 200)
 
     print("Test #1: for innovation consistency, 95% of innovations must be within confidence interval bounds")
+    # plt.figure(figsize=(3, 3))
     
     # plot orientation and velocity innovations on separate graphs
     plotVelocityInnovations(innovations, innovationCovs)
@@ -81,9 +82,12 @@ def plotVelocityInnovations(innovations, innovationCovs):
     innovationCovs = innovationCovs[1:]
 
     sds =  np.array([np.sqrt(np.diag(x)) for x in innovationCovs])
+    text = "95% of innovations should be within confidence interval bounds"
     # NOTE: should 2 * bound be added to mean, or 0??
     # plot_multiple_lines(np.array([innovations[:, 3], innovations[:, 3] + 2 * sds[:, 3], innovations[:, 3] - 2 * sds[:, 3], innovations[:, 4], innovations[:, 4] + 2 * sds[:, 4], innovations[:, 4] - 2 * sds[:, 4], innovations[:, 5], innovations[:, 5] + 2 * sds[:, 5], innovations[:, 5] - 2 * sds[:, 5]]), ["velocity 1", "upper 1", "lower 1", "velocity 2", "upper 2", "lower 2", "velocity 3", "upper 3", "lower 3"], "innovation magnitudes", 900, 100)
-    plot_multiple_lines(np.array([innovations[:, 3], 2 * sds[:, 3], - 2 * sds[:, 3], innovations[:, 4], 2 * sds[:, 4], - 2 * sds[:, 4], innovations[:, 5], 2 * sds[:, 5], - 2 * sds[:, 5]]), ["velocity 1", "upper 1", "lower 1", "velocity 2", "upper 2", "lower 2", "velocity 3", "upper 3", "lower 3"], "velocity innovation magnitudes", 900, 100)
+    # plot_multiple_lines(np.array([innovations[:, 3], 2 * sds[:, 3], - 2 * sds[:, 3], innovations[:, 4], 2 * sds[:, 4], - 2 * sds[:, 4], innovations[:, 5], 2 * sds[:, 5], - 2 * sds[:, 5]]), ["velocity 1", "upper 1", "lower 1", "velocity 2", "upper 2", "lower 2", "velocity 3", "upper 3", "lower 3"], "velocity innovation magnitudes", 900, 100, "TEST")
+    plot_multiple_lines(np.array([innovations[:, 3], 2 * sds[:, 3], - 2 * sds[:, 3], innovations[:, 4], innovations[:, 5]]), ["velocity 1", "upper sd", "lower sd", "velocity 2", "velocity 3"], "Test 1: velocity innovation magnitudes", 900, 100, text)
+
     
     
 # plot the first 3 innovations on their respective standard deviations on 1 graph
@@ -92,9 +96,10 @@ def plotOrientationInnovations(innovations, innovationCovs):
     innovationCovs = innovationCovs[1:]
 
     sds =  np.array([np.sqrt(np.diag(x)) for x in innovationCovs])
+    text = "95% of innovations should be within confidence interval bounds"
     # NOTE: should 2 * bound be added to mean, or 0??
     # plot_multiple_lines(np.array([innovations[:, 0], innovations[:, 0] + 2 * sds[:, 0], innovations[:, 0] - 2 * sds[:, 0], innovations[:, 1], innovations[:, 1] + 2 * sds[:, 1], innovations[:, 1] - 2 * sds[:, 1], innovations[:, 2], innovations[:, 2] + 2 * sds[:, 2], innovations[:, 2] - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "orientation innovation magnitudes", 100, 100)
-    plot_multiple_lines(np.array([innovations[:, 0], 2 * sds[:, 0], - 2 * sds[:, 0], innovations[:, 1], 2 * sds[:, 1], - 2 * sds[:, 1], innovations[:, 2], 2 * sds[:, 2], - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "orientation innovation magnitudes", 100, 100)
+    plot_multiple_lines(np.array([innovations[:, 0], 2 * sds[:, 0], - 2 * sds[:, 0], innovations[:, 1], 2 * sds[:, 1], - 2 * sds[:, 1], innovations[:, 2], 2 * sds[:, 2], - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "Test 1: orientation innovation magnitudes", 100, 100, text)
 
 
 
@@ -184,11 +189,16 @@ def plotInnovationSquared(innovations, innovationCovs):
 def plotAutocorrelation(innovations):
 
     # analyze for time dependency: can mean over/underestimation of process/measurement noise
+    #       white noise = disrtributed around 0 entire time = good fit
     # ideally, autocorrelation for each var should be within 95% of confidence interval
     # smaller noises = smaller distribution = more likely to in bounds
     print("Analyze autocorrelation of innovations:")
     print("if there is time correlation (i.e. not randomly distributed around 0), then test for whiteness fails")
     print("process/measurement noise may be too high or too low")
+
+    # fig.subplots_adjust(bottom=0.3)
+    # plt.figure(figsize=(3, 3))
+    # fig.text(x, y, "text")
 
     n = len(innovations)
 

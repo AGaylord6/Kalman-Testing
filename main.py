@@ -128,6 +128,9 @@ if __name__ == "__main__":
     # print("data: ", data[:3])
     # print("filtered: ", filtered[:3])
 
+    plotState_xyz(ideal, True)
+    plotData_xyz(data)
+    plotState_xyz(filtered, False)
 
     # order in which you call them is order in which they're saved in pdf
     # i.e. first plot called is first page, second plot called is second page, etc.
@@ -135,8 +138,7 @@ if __name__ == "__main__":
     plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
     plotAutocorrelation(ukf.innovations)
 
-    # plt.figure(figsize=(3, 3))
-    # 7, 3.5
+
 
 
 

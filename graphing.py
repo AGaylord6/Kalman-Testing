@@ -15,7 +15,7 @@ import matplotlib
 from mpl_toolkits.mplot3d import Axes3D
 
 
-def plot_multiple_lines(data, labels, title, x=0, y=0):
+def plot_multiple_lines(data, labels, title, x=0, y=0, text=""):
     ''' 
     plots multiple lines on the same graph
     note: does not call plt.show()
@@ -37,6 +37,12 @@ def plot_multiple_lines(data, labels, title, x=0, y=0):
     ax.legend()
 
     plt.title(title)
+
+    if text != "":
+        fig.text(.01, .01, text)
+        # fig.subplots_adjust(top=0.5)
+
+
 
     # moves figure to x and y coordinates
     move_figure(fig, x, y)
@@ -179,11 +185,11 @@ def plotState_xyz(data, ideal=False):
 
     if ideal:
         # plot two graphs in top left
-        plot_xyz(velocities, "Angular Velocity", 50, 0)
         plot_xyz(quaternions, "Ideal Quaternion", 0, 0)
+        plot_xyz(velocities, "Ideal Angular Velocity", 50, 0)
     else:
-        plot_xyz(velocities, "Angular Velocity", 575, 370)
         plot_xyz(quaternions, "Filtered Quaternion", 525, 370)
+        plot_xyz(velocities, "Filtered Angular Velocity", 575, 370)
 
 
 def plotData_xyz(data):
@@ -203,5 +209,5 @@ def plotData_xyz(data):
         magData = np.append(magData, np.array([data[i][:3]]), axis=0)
         gyroData = np.append(gyroData, np.array([data[i][3:]]), axis=0)
 
-    plot_xyz(gyroData, "Gyroscope", 1100, 0)
-    plot_xyz(magData, "Magnetometer", 1050, 0)
+    plot_xyz(magData, "Magnetometer Data", 1050, 0)
+    plot_xyz(gyroData, "Gyroscope Data", 1100, 0)
