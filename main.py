@@ -21,11 +21,10 @@ from irishsat_ukf.hfunc import *
 from filter import *
 from graphing import *
 from tests import *
+from saving import *
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import signal
-import subprocess
 
 '''
 
@@ -39,6 +38,7 @@ file:///C:/Users/andre/Downloads/WikibookonKalmanFilter.pdf
 notes:
     must ensure quaternion is normalized when output by EOMs
     added innovation and innovation covariance to UKF_algorithm
+    user must pip install fpdf
 
 TODO:
     effiency test/graphs + speed testing (read article)
@@ -139,9 +139,6 @@ if __name__ == "__main__":
     plotAutocorrelation(ukf.innovations)
 
 
-
-
-
     if plot == 1:
         ukf.visualizeResults(filtered)
 
@@ -159,44 +156,18 @@ if __name__ == "__main__":
 
     # print(autocorrelation2D(ukf.innovations)[0])
 
-    fileName = "output.pdf"
     
-    # Create the PdfPages object to which we will save the pages:
-    # The with statement makes sure that the PdfPages object is closed properly at
-    # the end of the block, even if an Exception occurs.
-    with PdfPages(fileName) as pdf:
+    outputFile = "output.pdf"
 
-        fig_nums = plt.get_fignums()   
-        figs = [plt.figure(n) for n in fig_nums] 
-        
-        # iterating over the numbers in list 
-        for fig in figs:  
-        
-            # save and close the current figure
-            fig.savefig(pdf, format='pdf') 
-            pdf.attach_note("This is a note")
-            plt.close(fig)
-        
-        # pdf.savefig()
+    # savePNGs(outputDir)
 
-        # attach_note(self, text, positionRect=[-100, -100, 0, 0]) 
-        # - Adds a new note to the page that will be saved next. 
-        # The optional positionRect specifies the position on the page.
+    # outputDir is global variable declared in saving.py
+    savePDF(outputFile, outputDir)
 
-        # We can also set the file's metadata via the PdfPages object:
-        d = pdf.infodict()
-        d['Title'] = 'Kalman-Testing Output'
-        d['Author'] = u'Jouni K. Sepp\xe4nen'
-        d['Subject'] = 'Graphical output of Kalman-Testing simulation'
-        d['Keywords'] = """IrishSat, UKF, Kalman Filter, CubeSat, Magnetometer, Gyroscope, Quaternion, Angular Velocity, 
-                        Magnetic Field, Reaction Wheels, EOM, Unscented Kalman Filter, State Estimation, State Space, Measurement Space, 
-                        Process Noise, Measurement Noise, Magnetic Field, Propagation, Simulation, Testing"""
-
+    openFile(outputFile)
+    
     # only show plot at end so they all show up
     plt.show()
-
-
-    subprocess.Popen([fileName],shell=True)
 
         
     # # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)

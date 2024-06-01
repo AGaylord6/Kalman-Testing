@@ -4,6 +4,7 @@ Author: Andrew Gaylord
 
 contains the graphing functionality for kalman filter visualization
 can plot data, state (quaternion and angular velocity), and 3D vectors
+when 2D data is plotted, it is also saved as a png file in the plotOutput directory
 
 '''
 
@@ -13,11 +14,13 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import matplotlib
 from mpl_toolkits.mplot3d import Axes3D
+from saving import *
 
 
-def plot_multiple_lines(data, labels, title, x=0, y=0, text=""):
+def plot_multiple_lines(data, labels, title, x=0, y=0, text="", fileName="default.png"):
     ''' 
     plots multiple lines on the same graph
+    stores plot as a png file in the plotOutput (global var in saving.py) directory
     note: does not call plt.show()
 
     @params:
@@ -25,6 +28,8 @@ def plot_multiple_lines(data, labels, title, x=0, y=0, text=""):
         labels: A list of labels for each line.
         title: title for graph
         x, y: pixel location on screen
+        text: sentence to go on bottom of graph
+        fileName: name of png file to save graph as
     '''
     # Create a figure and axes
     fig, ax = plt.subplots()
@@ -42,10 +47,11 @@ def plot_multiple_lines(data, labels, title, x=0, y=0, text=""):
         fig.text(.01, .01, text)
         # fig.subplots_adjust(top=0.5)
 
-
-
     # moves figure to x and y coordinates
     move_figure(fig, x, y)
+
+    # save the figure as a png using saving.py
+    saveFig(fig, fileName)
 
     # Show the plot
     # plt.show()
@@ -70,6 +76,76 @@ def move_figure(f, x=0, y=0):
         f.canvas.manager.window.move(x, y)
 
 
+def plot_xyz(data, title, x=0, y=0, fileName="default.png"):
+    ''' 
+    given an arbitrary numpy 2D list (where every element contains x, y, z or a quaternion a, b, c, d), plot them on a 2D graph
+
+    @params:
+        data: 2D array of xyz coordinates or quaternions
+        title: graph title
+        x, y: coordinates for graph on screen
+        fileNmae: name of png file to save graph as
+    '''
+
+    newData = data.transpose()
+
+    if len(data[0]) == 4:
+        # plot quaternion
+        plot_multiple_lines(newData, ["a", "b", "c", "d"], title, x, y, fileName=fileName)
+    else:
+        # plot xyz
+        plot_multiple_lines(newData, ["x", "y", "z"], title, x, y, fileName=fileName)
+
+
+def plotState_xyz(data, ideal=False):
+    '''
+    plots IrishSat's 7 dimensional state (quaternion and angular velocity)
+    creates 2 graphs that show quaternion and angular velocity for all time steps
+
+    @params:
+        data: 2D array of states to be graphed
+        ideal: boolean value that signifies where to place graphs
+            true = top left, false = bottom middle
+    '''
+
+    # separate quaternion and angular velocity from data array
+    quaternions = np.array([data[0][:4]])
+    velocities = np.array([data[0][4:]])
+
+    for i in range(1, len(data)):
+        quaternions = np.append(quaternions, np.array([data[i][:4]]), axis=0)
+        velocities = np.append(velocities, np.array([data[i][4:]]), axis=0)
+
+    if ideal:
+        # plot two graphs in top left
+        plot_xyz(velocities, "Ideal Angular Velocity", 50, 0, fileName="idealVelocity.png")
+        plot_xyz(quaternions, "Ideal Quaternion", 0, 0, fileName="idealQuaternion.png")
+    else:
+        plot_xyz(velocities, "Filtered Angular Velocity", 575, 370, fileName="filteredVelocity.png")
+        plot_xyz(quaternions, "Filtered Quaternion", 525, 370, fileName="filteredQuaternion.png")
+
+
+def plotData_xyz(data):
+    '''
+    plots 6 dimensional data
+    creates 2 graphs that show magnetic field and angular velocity for all time steps
+
+    @params:
+        data: 2D array of data readings (magnetometer and gyroscoped)
+    '''
+
+    # separate magnetometer and gyroscope data
+    magData = np.array([data[0][:3]])
+    gyroData = np.array([data[0][3:]])
+
+    for i in range(1, len(data)):
+        magData = np.append(magData, np.array([data[i][:3]]), axis=0)
+        gyroData = np.append(gyroData, np.array([data[i][3:]]), axis=0)
+
+    plot_xyz(gyroData, "Gyroscope Data", 1100, 0, fileName="gyroData.png")
+    plot_xyz(magData, "Magnetometer Data", 1050, 0, fileName="magData.png")
+
+    
 def plot3DVectors(vectors, plotSegment=111):
     '''
     plots 3D vectors
@@ -142,72 +218,3 @@ def plotData3D(data, numVectors, plotSegment=111):
 
     # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)
     plot3DVectors(result, plotSegment)
-
-
-def plot_xyz(data, title, x=0, y=0):
-    ''' 
-    given an arbitrary numpy 2D list (where every element contains x, y, z or a quaternion a, b, c, d), plot them on a 2D graph
-
-    @params:
-        data: 2D array of xyz coordinates or quaternions
-        title: graph title
-        x, y: coordinates for graph on screen
-    '''
-
-    newData = data.transpose()
-
-    if len(data[0]) == 4:
-        # plot quaternion
-        plot_multiple_lines(newData, ["a", "b", "c", "d"], title, x, y)
-    else:
-        # plot xyz
-        plot_multiple_lines(newData, ["x", "y", "z"], title, x, y)
-
-
-def plotState_xyz(data, ideal=False):
-    '''
-    plots IrishSat's 7 dimensional state (quaternion and angular velocity)
-    creates 2 graphs that show quaternion and angular velocity for all time steps
-
-    @params:
-        data: 2D array of states to be graphed
-        ideal: boolean value that signifies where to place graphs
-            true = top left, false = bottom middle
-    '''
-
-    # separate quaternion and angular velocity from data array
-    quaternions = np.array([data[0][:4]])
-    velocities = np.array([data[0][4:]])
-
-    for i in range(1, len(data)):
-        quaternions = np.append(quaternions, np.array([data[i][:4]]), axis=0)
-        velocities = np.append(velocities, np.array([data[i][4:]]), axis=0)
-
-    if ideal:
-        # plot two graphs in top left
-        plot_xyz(quaternions, "Ideal Quaternion", 0, 0)
-        plot_xyz(velocities, "Ideal Angular Velocity", 50, 0)
-    else:
-        plot_xyz(quaternions, "Filtered Quaternion", 525, 370)
-        plot_xyz(velocities, "Filtered Angular Velocity", 575, 370)
-
-
-def plotData_xyz(data):
-    '''
-    plots 6 dimensional data
-    creates 2 graphs that show magnetic field and angular velocity for all time steps
-
-    @params:
-        data: 2D array of data readings (magnetometer and gyroscoped)
-    '''
-
-    # separate magnetometer and gyroscope data
-    magData = np.array([data[0][:3]])
-    gyroData = np.array([data[0][3:]])
-
-    for i in range(1, len(data)):
-        magData = np.append(magData, np.array([data[i][:3]]), axis=0)
-        gyroData = np.append(gyroData, np.array([data[i][3:]]), axis=0)
-
-    plot_xyz(magData, "Magnetometer Data", 1050, 0)
-    plot_xyz(gyroData, "Gyroscope Data", 1100, 0)

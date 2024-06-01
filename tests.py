@@ -86,7 +86,7 @@ def plotVelocityInnovations(innovations, innovationCovs):
     # NOTE: should 2 * bound be added to mean, or 0??
     # plot_multiple_lines(np.array([innovations[:, 3], innovations[:, 3] + 2 * sds[:, 3], innovations[:, 3] - 2 * sds[:, 3], innovations[:, 4], innovations[:, 4] + 2 * sds[:, 4], innovations[:, 4] - 2 * sds[:, 4], innovations[:, 5], innovations[:, 5] + 2 * sds[:, 5], innovations[:, 5] - 2 * sds[:, 5]]), ["velocity 1", "upper 1", "lower 1", "velocity 2", "upper 2", "lower 2", "velocity 3", "upper 3", "lower 3"], "innovation magnitudes", 900, 100)
     # plot_multiple_lines(np.array([innovations[:, 3], 2 * sds[:, 3], - 2 * sds[:, 3], innovations[:, 4], 2 * sds[:, 4], - 2 * sds[:, 4], innovations[:, 5], 2 * sds[:, 5], - 2 * sds[:, 5]]), ["velocity 1", "upper 1", "lower 1", "velocity 2", "upper 2", "lower 2", "velocity 3", "upper 3", "lower 3"], "velocity innovation magnitudes", 900, 100, "TEST")
-    plot_multiple_lines(np.array([innovations[:, 3], 2 * sds[:, 3], - 2 * sds[:, 3], innovations[:, 4], innovations[:, 5]]), ["velocity 1", "upper sd", "lower sd", "velocity 2", "velocity 3"], "Test 1: velocity innovation magnitudes", 900, 100, text)
+    plot_multiple_lines(np.array([innovations[:, 3], 2 * sds[:, 3], - 2 * sds[:, 3], innovations[:, 4], innovations[:, 5]]), ["velocity 1", "upper sd", "lower sd", "velocity 2", "velocity 3"], "Test 1: velocity innovation magnitudes", 900, 100, text, fileName="test1-2.png")
 
     
     
@@ -99,7 +99,7 @@ def plotOrientationInnovations(innovations, innovationCovs):
     text = "95% of innovations should be within confidence interval bounds"
     # NOTE: should 2 * bound be added to mean, or 0??
     # plot_multiple_lines(np.array([innovations[:, 0], innovations[:, 0] + 2 * sds[:, 0], innovations[:, 0] - 2 * sds[:, 0], innovations[:, 1], innovations[:, 1] + 2 * sds[:, 1], innovations[:, 1] - 2 * sds[:, 1], innovations[:, 2], innovations[:, 2] + 2 * sds[:, 2], innovations[:, 2] - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "orientation innovation magnitudes", 100, 100)
-    plot_multiple_lines(np.array([innovations[:, 0], 2 * sds[:, 0], - 2 * sds[:, 0], innovations[:, 1], 2 * sds[:, 1], - 2 * sds[:, 1], innovations[:, 2], 2 * sds[:, 2], - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "Test 1: orientation innovation magnitudes", 100, 100, text)
+    plot_multiple_lines(np.array([innovations[:, 0], 2 * sds[:, 0], - 2 * sds[:, 0], innovations[:, 1], 2 * sds[:, 1], - 2 * sds[:, 1], innovations[:, 2], 2 * sds[:, 2], - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "Test 1: orientation innovation magnitudes", 100, 100, text, fileName="test1-1.png")
 
 
 
@@ -128,7 +128,7 @@ def plotInnovationSquared(innovations, innovationCovs):
     # sum of normalised innovation squared combined
     print("combined sum: ", np.sum(normInnovSquared))
 
-    plot_multiple_lines(np.array([normInnovSquared]), ["normalised innovation squared"], "innovation squared combined", 100, 100)
+    plot_multiple_lines(np.array([normInnovSquared]), ["normalised innovation squared"], "innovation squared combined", 100, 100, fileName="test2-1.png")
 
 
     # find normalised innovation squared all innovations separately
@@ -138,12 +138,12 @@ def plotInnovationSquared(innovations, innovationCovs):
         squares[i] = innovations[i].T * np.diag(np.linalg.inv(innovationCovs[i])) * innovations[i]
 
     # plot normalised innovation squared
-    plot_multiple_lines(np.array([squares[:, 0]]), ["normalised innovation squared"], "orientation 1", 200, 200)
-    plot_multiple_lines(np.array([squares[:, 1]]), ["normalised innovation squared"], "orientation 2", 300, 200)
-    plot_multiple_lines(np.array([squares[:, 2]]), ["normalised innovation squared"], "orientation 3", 400, 200)
-    plot_multiple_lines(np.array([squares[:, 3]]), ["normalised innovation squared"], "velocity 3", 500, 200)
-    plot_multiple_lines(np.array([squares[:, 4]]), ["normalised innovation squared"], "velocity 3", 600, 200)
-    plot_multiple_lines(np.array([squares[:, 5]]), ["normalised innovation squared"], "velocity 3", 700, 200)
+    plot_multiple_lines(np.array([squares[:, 0]]), ["normalised innovation squared"], "orientation 1", 200, 200, fileName="test2-2-1.png")
+    plot_multiple_lines(np.array([squares[:, 1]]), ["normalised innovation squared"], "orientation 2", 300, 200, fileName="test2-2-2.png")
+    plot_multiple_lines(np.array([squares[:, 2]]), ["normalised innovation squared"], "orientation 3", 400, 200, fileName="test2-2-3.png")
+    plot_multiple_lines(np.array([squares[:, 3]]), ["normalised innovation squared"], "velocity 3", 500, 200, fileName="test2-2-4.png")
+    plot_multiple_lines(np.array([squares[:, 4]]), ["normalised innovation squared"], "velocity 3", 600, 200, fileName="test2-2-5.png")
+    plot_multiple_lines(np.array([squares[:, 5]]), ["normalised innovation squared"], "velocity 3", 700, 200, fileName="test2-2-6.png")
 
     # find sum of normalised innovations squared
     sumInnovSquared = np.sum(squares, axis=0)
@@ -225,10 +225,10 @@ def plotAutocorrelation(innovations):
         correlations[i] = r
 
     # plot autocorrelation for orientation innovations
-    plot_multiple_lines(np.array([correlations[0], correlations[1], correlations[2], lower, upper]), ["auto 1", "auto 2", "auto 3", "lower sd", "upper sd"], "orientation autocorrelations", 100, 100)
+    plot_multiple_lines(np.array([correlations[0], correlations[1], correlations[2], lower, upper]), ["auto 1", "auto 2", "auto 3", "lower sd", "upper sd"], "orientation autocorrelations", 100, 100, fileName="test3-1")
 
     # plot autocorrelation for velocity innovations
-    plot_multiple_lines(np.array([correlations[3], correlations[4], correlations[5], lower, upper]), ["auto 4", "auto 5", "auto 6", "lower sd", "upper sd"], "velocity autocorrelations", 600, 100)
+    plot_multiple_lines(np.array([correlations[3], correlations[4], correlations[5], lower, upper]), ["auto 4", "auto 5", "auto 6", "lower sd", "upper sd"], "velocity autocorrelations", 600, 100, fileName="test3-2")
 
 
 
