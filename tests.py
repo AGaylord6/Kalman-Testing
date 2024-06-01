@@ -3,17 +3,7 @@ tests.py
 Author: Andrew Gaylord
 
 Contains statistical, efficiency, and correctness for kalman filter objects
-
-'''
-
-
-'''
-one of the ways to check Kalman filters performance is to check for error covariance matrix P 
-to be converging. If it converges to + or - standard deviation of the estimated value, 
-it can be considered as a stable point. 
-calculate square of difference between estimated and real
-You can verify that the estimated state converges to the actual state. 
-The error covariance, P, must decrease.
+Following statistical tests notes reference Estimation II by Ian Reid
 
 innovation (V) or residual: difference between a measurement and its prediction at time k
     measures new info provided by adding another measurement in estimation
@@ -26,6 +16,16 @@ innovation (V) or residual: difference between a measurement and its prediction 
 
 '''
 
+
+'''
+one of the ways to check Kalman filters performance is to check for error covariance matrix P 
+to be converging. If it converges to + or - standard deviation of the estimated value, 
+it can be considered as a stable point. 
+calculate square of difference between estimated and real
+You can verify that the estimated state converges to the actual state. 
+The error covariance, P, must decrease.
+'''
+
 import numpy as np
 from graphing import *
 from filter import *
@@ -33,8 +33,8 @@ from scipy.stats import chi2
 import scipy.signal as signal
 
 
-# function that returns true if 95% of the innovations are within 2 standard deviations of the mean
 # test #1 for filter consistency
+# function that returns true if 95% of the innovations are within 2 standard deviations of the mean
 # parameters: innovation arrays, innovation covariance arrays
 def innovationTest(innovations, innovationCovs, dim_mes):
     innovationMags = np.array([np.linalg.norm(x) for x in innovations])
@@ -101,9 +101,7 @@ def plotOrientationInnovations(innovations, innovationCovs):
 
 
 # test #2 for unbiasedness
-# function that returns true if the innovations are unbiased
-
-# calculates and plots normalised innovation squared
+# calculates and plots normalised innovation squared, returns whether each innovation fits chi square distribution
 def plotInnovationSquared(innovations, innovationCovs):
     # normInnovSquared = np.atleast_2d(innovations[:, 0]).T.conj() * np.linalg.inv(innovationCovs) * innovations[:, 0]
     # normInnovSquared = innovations[:, 0] * np.linalg.inv(innovationCovs) * innovations[:, 0]
@@ -179,12 +177,15 @@ def plotInnovationSquared(innovations, innovationCovs):
     # tuning may be more sensitive to changes in measurement/process noise if one affects orientation instead of just velocity
 
 
+
+
 # test #3 for whiteness (autocorrelation)
 # function that finds and plots normalised autocorrelation for each innovation sequence in a 2D array
 def plotAutocorrelation(innovations):
 
     # analyze for time dependency: can mean over/underestimation of process/measurement noise
     # ideally, autocorrelation for each var should be within 95% of confidence interval
+    # smaller noises = smaller distribution = more likely to in bounds
     print("Analyze autocorrelation of innovations:")
     print("if there is time correlation (i.e. not randomly distributed around 0), then test for whiteness fails")
     print("process/measurement noise may be too high or too low")
@@ -217,8 +218,7 @@ def plotAutocorrelation(innovations):
     plot_multiple_lines(np.array([correlations[0], correlations[1], correlations[2], lower, upper]), ["auto 1", "auto 2", "auto 3", "lower sd", "upper sd"], "orientation autocorrelations", 100, 100)
 
     # plot autocorrelation for velocity innovations
-    plot_multiple_lines(np.array([correlations[3], correlations[4], correlations[5], lower, upper]), ["auto 4", "auto 5", "auto 6", "lower sd", "upper sd"], "orientation autocorrelations", 600, 100)
-
+    plot_multiple_lines(np.array([correlations[3], correlations[4], correlations[5], lower, upper]), ["auto 4", "auto 5", "auto 6", "lower sd", "upper sd"], "velocity autocorrelations", 600, 100)
 
 
 

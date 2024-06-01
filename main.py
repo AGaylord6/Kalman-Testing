@@ -23,7 +23,9 @@ from graphing import *
 from tests import *
 
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 import signal
+import subprocess
 
 '''
 
@@ -39,11 +41,11 @@ notes:
     added innovation and innovation covariance to UKF_algorithm
 
 TODO:
-    statistical tests, effiency test/graphs + speed testing (read article)
+    effiency test/graphs + speed testing (read article)
     rewrite filter class to hold entire data sets
-    rewrite visualization/plotting functions for coherency and wrap in filter class (plot all 3 on 1 graph with different line types) (see graphing.py)
-    which method is correct for normalized innovation covariance? (and which CI?) (see tests.py)
-        should bound be added to measurement, 0, or average?
+    rewrite visualization/plotting functions for coherency and wrap in Filter class (plot all 3 on 1 graph with different line types) (see graphing.py)
+    which method is correct for normalized innovation covariance (test #2)? (and which CI?) (see tests.py)
+        should interval bound be added to measurement, 0, or average?
     print output to file??
 
 optional:
@@ -78,15 +80,15 @@ if __name__ == "__main__":
     # set process noise
     # parameters: noise magnitude, k (see Estimation II article by Ian Reed)
     ukf.ukf_setQ(.001, 10)
-    # good for test #2 with df = 600
-    ukf.ukf_setQ(.00025, 10)
+    # good for vn100 noises
+    ukf.ukf_setQ(.00001, 10)
 
 
     # set measurement noise
     # parameters: magnetometer noise, gyroscope noise
     ukf.ukf_setR(.001, .01)
-    # good for test #2 with df = 600
-    ukf.ukf_setR(.00025, .001)
+    # good for vn100 noises
+    ukf.ukf_setR(.001, .01)
 
 
     # create array of reaction wheel speed at each time step
@@ -99,8 +101,19 @@ if __name__ == "__main__":
     # print("state: ", ideal[:10])
 
     # set sensor noises
-    magNoises = np.random.normal(0, .035, (ukf.n, 3))
-    gyroNoises = np.random.normal(0, .01, (ukf.n, 3))
+    # noise sd = noise density * sqrt(sampling rate)
+    # vn100 imu sampling rate from user manual = 200 Hz
+    
+    # magNoises = np.random.normal(0, .035, (ukf.n, 3))
+    # mag noise density from vn100 website = 140 uGauss /sqrt(Hz)
+    magSD = (140 * 10e-6) * np.sqrt(200)
+    magNoises = np.random.normal(0, magSD, (ukf.n, 3))
+
+    # gyroNoises = np.random.normal(0, .01, (ukf.n, 3))
+    # gyro noise density from vn100 website = 0.0035 /s /sqrt(Hz)
+    gyroSD = 0.0035 * np.sqrt(200)
+    gyroNoises = np.random.normal(0, gyroSD, (ukf.n, 3))
+
 
     # 1 = plots + visualizer, 0 = visualizer only, 2 = none
     plot = 2
@@ -116,9 +129,15 @@ if __name__ == "__main__":
     # print("filtered: ", filtered[:3])
 
 
-    # plotInnovations(ukf.innovations, ukf.innovationCovs)
-    # plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
+    # order in which you call them is order in which they're saved in pdf
+    # i.e. first plot called is first page, second plot called is second page, etc.
+    plotInnovations(ukf.innovations, ukf.innovationCovs)
+    plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
     plotAutocorrelation(ukf.innovations)
+
+    # plt.figure(figsize=(3, 3))
+    # 7, 3.5
+
 
 
     if plot == 1:
@@ -138,9 +157,44 @@ if __name__ == "__main__":
 
     # print(autocorrelation2D(ukf.innovations)[0])
 
+    fileName = "output.pdf"
+    
+    # Create the PdfPages object to which we will save the pages:
+    # The with statement makes sure that the PdfPages object is closed properly at
+    # the end of the block, even if an Exception occurs.
+    with PdfPages(fileName) as pdf:
+
+        fig_nums = plt.get_fignums()   
+        figs = [plt.figure(n) for n in fig_nums] 
+        
+        # iterating over the numbers in list 
+        for fig in figs:  
+        
+            # save and close the current figure
+            fig.savefig(pdf, format='pdf') 
+            pdf.attach_note("This is a note")
+            plt.close(fig)
+        
+        # pdf.savefig()
+
+        # attach_note(self, text, positionRect=[-100, -100, 0, 0]) 
+        # - Adds a new note to the page that will be saved next. 
+        # The optional positionRect specifies the position on the page.
+
+        # We can also set the file's metadata via the PdfPages object:
+        d = pdf.infodict()
+        d['Title'] = 'Kalman-Testing Output'
+        d['Author'] = u'Jouni K. Sepp\xe4nen'
+        d['Subject'] = 'Graphical output of Kalman-Testing simulation'
+        d['Keywords'] = """IrishSat, UKF, Kalman Filter, CubeSat, Magnetometer, Gyroscope, Quaternion, Angular Velocity, 
+                        Magnetic Field, Reaction Wheels, EOM, Unscented Kalman Filter, State Estimation, State Space, Measurement Space, 
+                        Process Noise, Measurement Noise, Magnetic Field, Propagation, Simulation, Testing"""
 
     # only show plot at end so they all show up
     plt.show()
+
+
+    subprocess.Popen([fileName],shell=True)
 
         
     # # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)
