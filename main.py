@@ -76,6 +76,9 @@ if __name__ == "__main__":
 
     # Our North West Up true magnetic field in stenson remick should be: 19.42900375, 1.74830615, 49.13746833 [micro Teslas]
     ukf = Filter(100, 0.1, 7, 6, 0, 0, np.array([19, 1.7, 49]), np.array([0, 0, 0]), UKF)
+    
+    # clear output directory from last simulation
+    clearDir(outputDir)
 
     # set process noise
     # parameters: noise magnitude, k (see Estimation II article by Ian Reed)
@@ -132,11 +135,10 @@ if __name__ == "__main__":
     plotData_xyz(data)
     plotState_xyz(filtered, False)
 
-    # order in which you call them is order in which they're saved in pdf
-    # i.e. first plot called is first page, second plot called is second page, etc.
-    plotInnovations(ukf.innovations, ukf.innovationCovs)
-    plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
-    plotAutocorrelation(ukf.innovations)
+
+    # plotInnovations(ukf.innovations, ukf.innovationCovs)
+    # plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
+    # plotAutocorrelation(ukf.innovations)
 
 
     if plot == 1:
@@ -162,7 +164,7 @@ if __name__ == "__main__":
     # savePNGs(outputDir)
 
     # outputDir is global variable declared in saving.py
-    savePDF(outputFile, outputDir)
+    savePDF(outputFile, outputDir, ukf)
 
     openFile(outputFile)
     

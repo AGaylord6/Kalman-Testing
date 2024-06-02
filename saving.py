@@ -34,7 +34,7 @@ def saveFig(fig, fileName):
 
 
 
-def savePDF(outputFile, pngDir):
+def savePDF(outputFile, pngDir, filter):
     '''
     creates a report pdf using FPDF with all PNGs found in pngDir
     describes the graphs and their significance
@@ -46,27 +46,94 @@ def savePDF(outputFile, pngDir):
 
     # create the PDF object
     pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    title = "Kalman-Testing Simulation Report"
+    pdf.set_author("Andrew Gaylord")
+    pdf.set_title(title)
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=11)
 
-    # iterate over all PNGs in the directory and add them to the pdf
-    for i, png in enumerate(os.listdir(pngDirectory)):
+    # title and document details
+    pdfHeader(pdf, title)
+
+    # Graphical output of simulating the proposed kalman filter ({filter.kalmanMethod}) for {filter.n} time steps. 
+    introText = f"""Ideal behavior is dictated by our propogating initial state and reaction wheel info for each step through our Equations of Motion (EOMs) and the true magnetic field ({filter.B_true[0]}, {filter.B_true[1]}, {filter.B_true[2]} microteslas)."""
+    
+    pdf.multi_cell(0, 5, introText, 0, 'L')
+
+    pdf.image(os.path.join(pngDirectory, "idealQuaternion.png"), x=10, y=pdf.get_y(), w=180)
+    pdf.ln(128)
+    pdf.image(os.path.join(pngDirectory, "idealVelocity.png"), x=10, y=pdf.get_y(), w=180)
+
+    pdf.add_page()
+
+    pdfHeader(pdf, "Data")
+
+    magSD = (140 * 10e-6) * np.sqrt(200)
+    gyroSD = 0.0035 * np.sqrt(200)
+    dataText = f"""Simulate IMU data by adding noise to our ideal states in measurement space. For vn100, magnetometer noise = {magSD} and gyroscope noise = {gyroSD}."""
+
+    pdf.multi_cell(0, 5, dataText, 0, 'L')
+
+    pdf.image(os.path.join(pngDirectory, "magData.png"), x=10, y=pdf.get_y(), w=180)
+    pdf.ln(128)
+    pdf.image(os.path.join(pngDirectory, "gyroData.png"), x=10, y=pdf.get_y(), w=180)
+
+    pdf.add_page()
+
+
+    pdfHeader(pdf, "Filter Results")
+
+    filterText = f"""Kalman filter estimates our state for each time step by combining the noisy data and physics EOMs."""
+
+    pdf.multi_cell(0, 5, filterText, 0, 'L')
+
+    pdf.image(os.path.join(pngDirectory, "filteredQuaternion.png"), x=10, y=pdf.get_y(), w=180)
+    pdf.ln(128)
+    pdf.image(os.path.join(pngDirectory, "filteredVelocity.png"), x=10, y=pdf.get_y(), w=180)
+
+    pdf.add_page()
+
+
+    # # iterate over all PNGs in the directory and add them to the pdf
+    # for i, png in enumerate(os.listdir(pngDirectory)):
         
-        # add title and description
-        pdf.cell(200, 10, txt="Plot " + str(i+1), ln=1, align='C')
-        pdf.cell(200, 10, txt="This is a description of the graph and its significance", ln=1, align='L')
+    #     # add title and description
+    #     pdf.cell(200, 10, txt="Plot " + str(i+1), ln=1, align='C')
+    #     pdf.cell(200, 10, txt="This is a description of the graph and its significance", ln=1, align='L')
 
-        # add the PNG to the pdf
-        pdf.image(os.path.join(pngDirectory, png), x=10, y=pdf.get_y(), w=180)
+    #     # add the PNG to the pdf
+    #     pdf.image(os.path.join(pngDirectory, png), x=10, y=pdf.get_y(), w=180)
 
-        # add a page break if not the last PNG
-        if i < len(os.listdir(pngDirectory))-1:
-            pdf.add_page()
+    #     # add a page break if not the last PNG
+    #     if i < len(os.listdir(pngDirectory))-1:
+    #         pdf.add_page()
 
     # output the pdf to the outputFile
     pdf.output(outputFile)
 
+
+def pdfHeader(pdf, title):
+    '''
+    insert a header in the pdf with title
+    '''
+
+    pdf.set_font('Arial', 'B', 16)
+    # Calculate width of title and position
+    w = pdf.get_string_width(title) + 6
+    pdf.set_x((210 - w) / 2)
+    # Colors of frame, background and text
+    pdf.set_draw_color(255, 255, 255)
+    pdf.set_fill_color(255, 255, 255)
+    # pdf.set_text_color(220, 50, 50)
+    # Thickness of frame (1 mm)
+    # pdf.set_line_width(1)
+    pdf.cell(w, 9, title, 1, 1, 'C', 1)
+    # Line break
+    pdf.ln(10)
+
+    # return to normal font
+    pdf.set_font("Arial", size=11)
 
 
 def savePNGs(outputDir):
@@ -97,6 +164,16 @@ def savePNGs(outputDir):
 def openFile(outputFile):
     # open the pdf file
     subprocess.Popen([outputFile], shell=True)
+
+
+def clearDir(outputDir):
+    # removes all files in the output directory
+    files = os.listdir(outputDir)
+    for file in files:
+        file_path = os.path.join(outputDir, file)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+    
 
 def oldPDF(outputFile):
     pass
