@@ -94,6 +94,43 @@ def savePDF(outputFile, pngDir, filter):
 
     pdf.add_page()
 
+    pdfHeader(pdf, "Tests")
+
+    testText = f"""We have two metrics for examining our filter: statistical and speed tests. 
+TODO: implement speed test + output time for n steps + average time per step.
+The statistical tests are based on Estimation II by Ian Reid. He outlines 3 tests that examine the innovation (or residual) of the filter, which is the difference betwee a measurement and the filter's prediction. 
+1) Consistency: the innovations should be randomly distributed about 0 and fall within its covariance bounds.
+2) Unbiasedness: the sum of the normalised innovations squared should fall within a chi square confidence interval.
+3) Whiteness: autocorrelation should be distributed around 0 with no time dependecy."""
+
+    pdf.multi_cell(0, 5, testText, 0, 'L')
+
+    pdf.add_page()
+
+    pdfHeader(pdf, "Test 1")
+
+    pdf.multi_cell(0, 5, "Vizually inspect that 95% of innovations fall within confidence interval bounds.", 0, 'L')
+
+    # split into 6 different graphs?
+    pdf.image(os.path.join(pngDirectory, "test1-1.png"), x=10, y=pdf.get_y(), w=180)
+    pdf.ln(128)
+    pdf.image(os.path.join(pngDirectory, "test1-2.png"), x=10, y=pdf.get_y(), w=180)
+
+
+    # test 2: show 6 graphs + combined? or do no graphs and just numbers?
+    pdf.add_page()
+
+    pdfHeader(pdf, "Test 2")
+
+    pdf.multi_cell(0, 5, "Sum of each innovation must be within chi square bounds", 0, 'L')
+
+    # split into 6 different graphs?
+    pdf.image(os.path.join(pngDirectory, "test2-2-1.png"), x=10, y=pdf.get_y(), w=100)
+    pdf.image(os.path.join(pngDirectory, "test2-2-2.png"), x=120, y=pdf.get_y(), w=100)
+
+    pdf.ln(100)
+
+    pdf.image(os.path.join(pngDirectory, "test2-2-4.png"), x=10, y=pdf.get_y(), w=100)
 
     # # iterate over all PNGs in the directory and add them to the pdf
     # for i, png in enumerate(os.listdir(pngDirectory)):

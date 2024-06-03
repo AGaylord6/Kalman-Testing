@@ -41,12 +41,11 @@ notes:
     user must pip install fpdf
 
 TODO:
-    effiency test/graphs + speed testing (read article)
+    speed testing + other correctness tests?
     rewrite filter class to hold entire data sets
     rewrite visualization/plotting functions for coherency and wrap in Filter class (plot all 3 on 1 graph with different line types) (see graphing.py)
     which method is correct for normalized innovation covariance (test #2)? (and which CI?) (see tests.py)
         should interval bound be added to measurement, 0, or average?
-    print output to file??
 
 optional:
     more comprehensive plotting: wrappers, options
@@ -85,6 +84,9 @@ if __name__ == "__main__":
     ukf.ukf_setQ(.001, 10)
     # good for vn100 noises
     ukf.ukf_setQ(.00001, 10)
+    # good for test 2
+    ukf.ukf_setQ(.00001, 10)
+
 
 
     # set measurement noise
@@ -92,6 +94,8 @@ if __name__ == "__main__":
     ukf.ukf_setR(.001, .01)
     # good for vn100 noises
     ukf.ukf_setR(.001, .01)
+    # good for test 2
+    ukf.ukf_setR(.00025, .0025)
 
 
     # create array of reaction wheel speed at each time step
@@ -136,8 +140,8 @@ if __name__ == "__main__":
     plotState_xyz(filtered, False)
 
 
-    # plotInnovations(ukf.innovations, ukf.innovationCovs)
-    # plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
+    plotInnovations(ukf.innovations, ukf.innovationCovs)
+    plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
     # plotAutocorrelation(ukf.innovations)
 
 

@@ -82,7 +82,8 @@ def plotVelocityInnovations(innovations, innovationCovs):
     innovationCovs = innovationCovs[1:]
 
     sds =  np.array([np.sqrt(np.diag(x)) for x in innovationCovs])
-    text = "95% of innovations should be within confidence interval bounds"
+    # text = "95% of innovations should be within confidence interval bounds"
+    text = ""
     # NOTE: should 2 * bound be added to mean, or 0??
     # plot_multiple_lines(np.array([innovations[:, 3], innovations[:, 3] + 2 * sds[:, 3], innovations[:, 3] - 2 * sds[:, 3], innovations[:, 4], innovations[:, 4] + 2 * sds[:, 4], innovations[:, 4] - 2 * sds[:, 4], innovations[:, 5], innovations[:, 5] + 2 * sds[:, 5], innovations[:, 5] - 2 * sds[:, 5]]), ["velocity 1", "upper 1", "lower 1", "velocity 2", "upper 2", "lower 2", "velocity 3", "upper 3", "lower 3"], "innovation magnitudes", 900, 100)
     # plot_multiple_lines(np.array([innovations[:, 3], 2 * sds[:, 3], - 2 * sds[:, 3], innovations[:, 4], 2 * sds[:, 4], - 2 * sds[:, 4], innovations[:, 5], 2 * sds[:, 5], - 2 * sds[:, 5]]), ["velocity 1", "upper 1", "lower 1", "velocity 2", "upper 2", "lower 2", "velocity 3", "upper 3", "lower 3"], "velocity innovation magnitudes", 900, 100, "TEST")
@@ -96,7 +97,8 @@ def plotOrientationInnovations(innovations, innovationCovs):
     innovationCovs = innovationCovs[1:]
 
     sds =  np.array([np.sqrt(np.diag(x)) for x in innovationCovs])
-    text = "95% of innovations should be within confidence interval bounds"
+    # text = "95% of innovations should be within confidence interval bounds"
+    text = ""
     # NOTE: should 2 * bound be added to mean, or 0??
     # plot_multiple_lines(np.array([innovations[:, 0], innovations[:, 0] + 2 * sds[:, 0], innovations[:, 0] - 2 * sds[:, 0], innovations[:, 1], innovations[:, 1] + 2 * sds[:, 1], innovations[:, 1] - 2 * sds[:, 1], innovations[:, 2], innovations[:, 2] + 2 * sds[:, 2], innovations[:, 2] - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "orientation innovation magnitudes", 100, 100)
     plot_multiple_lines(np.array([innovations[:, 0], 2 * sds[:, 0], - 2 * sds[:, 0], innovations[:, 1], 2 * sds[:, 1], - 2 * sds[:, 1], innovations[:, 2], 2 * sds[:, 2], - 2 * sds[:, 2]]), ["orientation 1", "upper 1", "lower 1", "orientation 2", "upper 2", "lower 2", "orientation 3", "upper 3", "lower 3"], "Test 1: orientation innovation magnitudes", 100, 100, text, fileName="test1-1.png")
@@ -135,22 +137,35 @@ def plotInnovationSquared(innovations, innovationCovs):
     # the innovations squared should each be chi squared distributed with 6 degrees of freedom
     squares = np.zeros((len(innovations), len(innovations[0])))
     for i in range(len(innovations)):
-        squares[i] = innovations[i].T * np.diag(np.linalg.inv(innovationCovs[i])) * innovations[i]
+        # which one is correct??
+        squares[i] = innovations[i] * np.diag(np.linalg.inv(innovationCovs[i])) * innovations[i]
+        # squares[i] = innovations[i] * np.diag(np.linalg.inv(np.diag(np.diag(innovationCovs[i])))) * innovations[i]
 
-    # plot normalised innovation squared
-    plot_multiple_lines(np.array([squares[:, 0]]), ["normalised innovation squared"], "orientation 1", 200, 200, fileName="test2-2-1.png")
-    plot_multiple_lines(np.array([squares[:, 1]]), ["normalised innovation squared"], "orientation 2", 300, 200, fileName="test2-2-2.png")
-    plot_multiple_lines(np.array([squares[:, 2]]), ["normalised innovation squared"], "orientation 3", 400, 200, fileName="test2-2-3.png")
-    plot_multiple_lines(np.array([squares[:, 3]]), ["normalised innovation squared"], "velocity 3", 500, 200, fileName="test2-2-4.png")
-    plot_multiple_lines(np.array([squares[:, 4]]), ["normalised innovation squared"], "velocity 3", 600, 200, fileName="test2-2-5.png")
-    plot_multiple_lines(np.array([squares[:, 5]]), ["normalised innovation squared"], "velocity 3", 700, 200, fileName="test2-2-6.png")
 
     # find sum of normalised innovations squared
     sumInnovSquared = np.sum(squares, axis=0)
 
+    # average of each normalised innovation squared
+    aves = np.zeros(len(innovations[0]))
+    for i in range(len(innovations[0])):
+        aves[i] = np.mean(squares[:, i])
+    # aves = np.array([np.mean(x) for x in squares])
+
     print("Sum of separate squared innovations: ", sumInnovSquared)
 
+    print("Averages of separate squared innovations: ", aves)
+
     print("sum of seperate combined squared innovations: ", np.sum(sumInnovSquared))
+
+    # plot normalised innovation squared
+    plot_multiple_lines(np.array([squares[:, 0]]), ["normalised innovation squared"], "orientation 1", 200, 200, text="sum: " + str(round(sumInnovSquared[0], 3)) + " avrg: " + str(round(aves[0], 3)), fileName="test2-2-1.png")
+    plot_multiple_lines(np.array([squares[:, 1]]), ["normalised innovation squared"], "orientation 2", 300, 200, text="sum: " + str(round(sumInnovSquared[1], 3)) + " avrg: " + str(round(aves[1], 3)), fileName="test2-2-2.png")
+    plot_multiple_lines(np.array([squares[:, 2]]), ["normalised innovation squared"], "orientation 3", 400, 200, text="sum: " + str(round(sumInnovSquared[2], 3)) + " avrg: " + str(round(aves[2], 3)), fileName="test2-2-3.png")
+    plot_multiple_lines(np.array([squares[:, 3]]), ["normalised innovation squared"], "velocity 3", 500, 200, text="sum: " + str(round(sumInnovSquared[3], 3)) + " avrg: " + str(round(aves[3], 3)), fileName="test2-2-4.png")
+    plot_multiple_lines(np.array([squares[:, 4]]), ["normalised innovation squared"], "velocity 3", 600, 200, text="sum: " + str(round(sumInnovSquared[4], 3)) + " avrg: " + str(round(aves[4], 3)), fileName="test2-2-5.png")
+    plot_multiple_lines(np.array([squares[:, 5]]), ["normalised innovation squared"], "velocity 3", 700, 200, text="sum: " + str(round(sumInnovSquared[5], 3)) + " avrg: " + str(round(aves[5], 3)), fileName="test2-2-6.png")
+
+
 
     # because innovation is ergodic, we can find sample mean as a moving average of 1 run instead using N independent samples 
     # print("Averages of separate squared innovations: ", np.mean(squares, axis=0))
@@ -175,6 +190,7 @@ def plotInnovationSquared(innovations, innovationCovs):
     #       i.e. measurement/process noise combined is too large/overestimated (facts)
     # if too large (upper end of interval), then the filter is not confident enough in its measurements (??)
     #       i.e. measurement/process noise combined is too small/underestimated
+    #       smaller noise = larger normalized innovations squared
 
     # note: if the sum of the normalised innovation squared is within the confidence interval, then the filter is unbiased
     # absolute value of noises may be tuned to pass chi square test
