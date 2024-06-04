@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
 
     plotInnovations(ukf.innovations, ukf.innovationCovs)
-    plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
+    sum = plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
     # plotAutocorrelation(ukf.innovations)
 
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     # savePNGs(outputDir)
 
     # outputDir is global variable declared in saving.py
-    savePDF(outputFile, outputDir, ukf)
+    savePDF(outputFile, outputDir, ukf, sum)
 
     openFile(outputFile)
     

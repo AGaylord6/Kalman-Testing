@@ -13,6 +13,7 @@ import subprocess
 from fpdf import FPDF
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import chi2
 
 
 # declare global var for name out output directory to store plots in
@@ -34,7 +35,7 @@ def saveFig(fig, fileName):
 
 
 
-def savePDF(outputFile, pngDir, filter):
+def savePDF(outputFile, pngDir, filter, sum):
     '''
     creates a report pdf using FPDF with all PNGs found in pngDir
     describes the graphs and their significance
@@ -97,10 +98,17 @@ def savePDF(outputFile, pngDir, filter):
     pdfHeader(pdf, "Tests")
 
     testText = f"""We have two metrics for examining our filter: statistical and speed tests. 
+
 TODO: implement speed test + output time for n steps + average time per step.
+
 The statistical tests are based on Estimation II by Ian Reid. He outlines 3 tests that examine the innovation (or residual) of the filter, which is the difference betwee a measurement and the filter's prediction. 
+
 1) Consistency: the innovations should be randomly distributed about 0 and fall within its covariance bounds.
-2) Unbiasedness: the sum of the normalised innovations squared should fall within a chi square confidence interval.
+
+2) Unbiasedness: the sum of the normalised innovations squared should fall within a 95% chi square confidence interval.
+    If distribution sums are too small (fall below interval), then measurement/process noise is overestimated (too large). Therefore, the combined magnitude of the noises must be decreased.
+    Conversely, measurement/process noise can be increased to lower the sums of the normalized innovations squared. 
+
 3) Whiteness: autocorrelation should be distributed around 0 with no time dependecy."""
 
     pdf.multi_cell(0, 5, testText, 0, 'L')
@@ -122,15 +130,23 @@ The statistical tests are based on Estimation II by Ian Reid. He outlines 3 test
 
     pdfHeader(pdf, "Test 2")
 
-    pdf.multi_cell(0, 5, "Sum of each innovation must be within chi square bounds", 0, 'L')
+    # pdf.multi_cell(0, 5, "Sum of each innovation must be within chi square bounds " + str([round(x, 3) for x in chi2.interval(0.95, 100)]) + " (df=100)", 0, 'L')
+    pdf.multi_cell(0, 5, "Sum of each innovation must be within chi square bounds {} (df={})".format(str([round(x, 3) for x in chi2.interval(0.95, 100)]), filter.n), 0, 'L')
 
-    # split into 6 different graphs?
-    pdf.image(os.path.join(pngDirectory, "test2-2-1.png"), x=10, y=pdf.get_y(), w=100)
-    pdf.image(os.path.join(pngDirectory, "test2-2-2.png"), x=120, y=pdf.get_y(), w=100)
+    # pdf.multi_cell(0, 5, "Total sum " + str(round(sum, 3)) + " must be within interval " + str([round(x, 3) for x in chi2.interval(0.95, 600)]) + " (df=600)", 0, 'L')
+    pdf.multi_cell(0, 5, "Total sum {} must be within 95% interval {} (df={})".format(str(round(sum, 3)), str([round(x, 3) for x in chi2.interval(0.95, 600)]), filter.n * filter.dim_mes), 0, 'L')
 
-    pdf.ln(100)
+    pdf.multi_cell(0, 5, "If distributions are too small, decrease measurement/process noise (and vice versa)", 0, 'L')
 
-    pdf.image(os.path.join(pngDirectory, "test2-2-4.png"), x=10, y=pdf.get_y(), w=100)
+    # split into 6 different graphs
+    pdf.image(os.path.join(pngDirectory, "test2-2-1.png"), x=5, y=pdf.get_y(), w=105)
+    pdf.image(os.path.join(pngDirectory, "test2-2-2.png"), x=100, y=pdf.get_y(), w=105)
+    pdf.ln(80)
+    pdf.image(os.path.join(pngDirectory, "test2-2-3.png"), x=5, y=pdf.get_y(), w=105)
+    pdf.image(os.path.join(pngDirectory, "test2-2-4.png"), x=100, y=pdf.get_y(), w=105)
+    pdf.ln(80)
+    pdf.image(os.path.join(pngDirectory, "test2-2-5.png"), x=5, y=pdf.get_y(), w=105)
+    pdf.image(os.path.join(pngDirectory, "test2-2-6.png"), x=100, y=pdf.get_y(), w=105)
 
     # # iterate over all PNGs in the directory and add them to the pdf
     # for i, png in enumerate(os.listdir(pngDirectory)):

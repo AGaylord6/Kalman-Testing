@@ -44,7 +44,7 @@ def plot_multiple_lines(data, labels, title, x=0, y=0, text="", fileName="defaul
     plt.title(title)
 
     if text != "":
-        fig.text(.01, .01, text)
+        fig.text(.01, .01, "    " + text)
         # fig.subplots_adjust(top=0.5)
 
     # moves figure to x and y coordinates

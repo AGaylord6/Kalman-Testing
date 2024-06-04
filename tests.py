@@ -69,7 +69,7 @@ def plotInnovations(innovations, innovationCovs):
     # plot to check whether innovation is centered on 0 and 95% of measurements are consistent with standard deviation
     # plot_multiple_lines(np.array([innovationMags, upper, lower]), ["innovation magnitude", "upper sd", "lower sd"], "innovation", 300, 200)
 
-    print("Test #1: for innovation consistency, 95% of innovations must be within confidence interval bounds")
+    # print("Test #1: for innovation consistency, 95% of innovations must be within confidence interval bounds")
     # plt.figure(figsize=(3, 3))
     
     # plot orientation and velocity innovations on separate graphs
@@ -181,7 +181,8 @@ def plotInnovationSquared(innovations, innovationCovs):
 
     print("interval with " + str(len(innovations)) + " df: ", chi2.interval(0.95, len(innovations)))
     print("interval with n*m = " + str(len(innovations[0])*len(innovations)) + " df: ", chi2.interval(0.95, len(innovations[0])*len(innovations)))
-
+    
+    return np.sum(sumInnovSquared)
 
     # sum for each innovation must be within 95% confidence interval
     #   otherwise, infer whether combined noise is too large/too small
