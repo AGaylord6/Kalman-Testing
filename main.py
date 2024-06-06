@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
     plotInnovations(ukf.innovations, ukf.innovationCovs)
     sum = plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
-    # plotAutocorrelation(ukf.innovations)
+    plotAutocorrelation(ukf.innovations)
 
 
     if plot == 1:

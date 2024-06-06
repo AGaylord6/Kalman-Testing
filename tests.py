@@ -242,10 +242,22 @@ def plotAutocorrelation(innovations):
         correlations[i] = r
 
     # plot autocorrelation for orientation innovations
-    plot_multiple_lines(np.array([correlations[0], correlations[1], correlations[2], lower, upper]), ["auto 1", "auto 2", "auto 3", "lower sd", "upper sd"], "orientation autocorrelations", 100, 100, fileName="test3-1")
+    # plot_multiple_lines(np.array([correlations[0], correlations[1], correlations[2], lower, upper]), ["auto 1", "auto 2", "auto 3", "lower sd", "upper sd"], "orientation autocorrelations", 100, 100, fileName="test3-1")
 
     # plot autocorrelation for velocity innovations
-    plot_multiple_lines(np.array([correlations[3], correlations[4], correlations[5], lower, upper]), ["auto 4", "auto 5", "auto 6", "lower sd", "upper sd"], "velocity autocorrelations", 600, 100, fileName="test3-2")
+    # plot_multiple_lines(np.array([correlations[3], correlations[4], correlations[5], lower, upper]), ["auto 4", "auto 5", "auto 6", "lower sd", "upper sd"], "velocity autocorrelations", 600, 100, fileName="test3-2")
+
+    zeros = np.zeros((n-1))
+
+    # plot each autocorrelation on its own graph
+    plot_multiple_lines(np.array([correlations[0], zeros]), ["autocorrelation", "zero"], "orientation 1", 200, 200, fileName="test3-1.png")
+    plot_multiple_lines(np.array([correlations[1], zeros]), ["autocorrelation", "zero"], "orientation 2", 300, 200, fileName="test3-2.png")
+    plot_multiple_lines(np.array([correlations[2], zeros]), ["autocorrelation", "zero"], "orientation 3", 400, 200, fileName="test3-3.png")
+    plot_multiple_lines(np.array([correlations[3], zeros]), ["autocorrelation", "zero"], "velocity 1", 500, 200, fileName="test3-4.png")
+    plot_multiple_lines(np.array([correlations[4], zeros]), ["autocorrelation", "zero"], "velocity 2", 600, 200, fileName="test3-5.png")
+    plot_multiple_lines(np.array([correlations[5], zeros]), ["autocorrelation", "zero"], "velocity 3", 700, 200, fileName="test3-6.png")
+
+
 
 
 

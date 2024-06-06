@@ -148,6 +148,22 @@ The statistical tests are based on Estimation II by Ian Reid. He outlines 3 test
     pdf.image(os.path.join(pngDirectory, "test2-2-5.png"), x=5, y=pdf.get_y(), w=105)
     pdf.image(os.path.join(pngDirectory, "test2-2-6.png"), x=100, y=pdf.get_y(), w=105)
 
+    pdf.add_page()
+
+    pdfHeader(pdf, "Test 3")
+
+    pdf.multi_cell(0, 5, "Analyze each graph for time dependency. Each autocorrelation should be randomly distributed around 0 the entire time (except for first element).", 0, 'L')
+
+    # split into 6 different graphs
+    pdf.image(os.path.join(pngDirectory, "test3-1.png"), x=5, y=pdf.get_y(), w=105)
+    pdf.image(os.path.join(pngDirectory, "test3-2.png"), x=100, y=pdf.get_y(), w=105)
+    pdf.ln(80)
+    pdf.image(os.path.join(pngDirectory, "test3-3.png"), x=5, y=pdf.get_y(), w=105)
+    pdf.image(os.path.join(pngDirectory, "test3-4.png"), x=100, y=pdf.get_y(), w=105)
+    pdf.ln(80)
+    pdf.image(os.path.join(pngDirectory, "test3-5.png"), x=5, y=pdf.get_y(), w=105)
+    pdf.image(os.path.join(pngDirectory, "test3-6.png"), x=100, y=pdf.get_y(), w=105)
+
     # # iterate over all PNGs in the directory and add them to the pdf
     # for i, png in enumerate(os.listdir(pngDirectory)):
         
