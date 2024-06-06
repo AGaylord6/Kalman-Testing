@@ -12,4 +12,4 @@ Solution:
 
 Used to test state estimation software from https://github.com/ND-IrishSat/protosat-23-24, including our Unscented Kalman Filter (UKF). 
 
-These repo provides the infrastructure to simulate state estimation methods like Kalman filters and test their deployment, accuracy, and effiency. 
+These repo provides the infrastructure to simulate state estimation methods like Kalman filters and test their deployment, accuracy, and effiency. Generates a pdf outlining simulation and test results (output.pdf). 
