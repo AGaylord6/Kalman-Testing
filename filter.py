@@ -41,17 +41,32 @@ class Filter():
         # starting covariance (overrid by ukf_setQ)
         self.cov = np.identity(dim) * 5e-7
 
-        # 2D array of n innovations and covariances
+        # 2D array of n innovations and covariances (populated by filter.simulate)
         self.innovations = np.zeros((n, dim_mes))
         self.innovationCovs = np.zeros((n, dim_mes, dim_mes))
 
         # true magnetic field for simulation
         self.B_true = B_true
 
-        # 1x3 array of reaction wheel speeds
-        self.reaction_speeds = reaction_speeds
+        # 1x3 array of current reaction wheel speeds
+        self.curr_reaction_speeds = reaction_speeds
         # reaction wheel speed of last time step
-        self.old_reaction_speeds = np.zeros(3)
+        self.last_reaction_speeds = np.zeros(3)
+
+        # reaction wheel speeds for all n steps
+        self.reaction_speeds = np.zeros((n, 3))
+
+        # data values for all n steps
+        self.data = np.zeros((n, dim_mes))
+
+        # ideal states from EOMs for all n steps
+        self.ideal_states = np.zeros((n, dim))
+
+        # kalman filtered states for all n steps
+        self.filtered_states = np.zeros((n, dim))
+
+        # covariance of system for all n steps
+        self.covs = np.zeros((n, dim, dim))
 
         # what kalman filter to apply to this system
         self.kalmanMethod = kalmanMethod
@@ -102,7 +117,7 @@ class Filter():
         '''
         generates ideal/actual reaction wheel speeds for n steps
         goes to max for flipSteps and then decreases by step until min is reached
-
+        populates self.reaction_speeds
 
         @params:
             max, min: max and min speeds
@@ -113,7 +128,7 @@ class Filter():
         '''
 
         # start with 0 speed on all axices
-        ideal_reaction_speeds = [np.array([0, 0, 0])]
+        ideal_reaction_speeds = [self.curr_reaction_speeds]
         thing = 0
 
         for a in range(self.n):
@@ -128,14 +143,18 @@ class Filter():
             # multiply by bitset to only get speed on proper axis
             result = indices * result
             ideal_reaction_speeds.append(result)
-            
+
+        
+        # store in filter object
+        self.reaction_speeds = np.array(ideal_reaction_speeds[:self.n])
+        
         return np.array(ideal_reaction_speeds[:self.n])
 
 
-    def propagate(self, reaction_speeds):
+    def propagate(self):
         '''
         generates ideal/actual states of cubesat for n time steps
-        uses starting state and reaction wheel speeds to progate through our EOMs (equations of motion)
+        uses starting state and reaction wheel speeds at each step to progate through our EOMs (equations of motion)
 
         these equations give rough idea of how our satellite would respond to these conditions at each time step
         from this physics-based ideal state, we can generate fake data to pass through our filter
@@ -143,7 +162,7 @@ class Filter():
         '''
 
         # initialize propogator object with inital quaternion and angular velocity
-        # propagator = AttitudePropagator(q_init=self.state[:4], w_init=self.reaction_speeds)
+        # propagator = AttitudePropagator(q_init=self.state[:4], w_init=self.curr_reaction_speeds)
         # t0 = 0
         # tf = self.n * self.dt
         # # use attitude propagator to find actual ideal quaternion for n steps
@@ -162,30 +181,31 @@ class Filter():
         # make array of all states
         states = np.array([currState])
 
-        self.reaction_speeds = np.zeros(3)
+        self.curr_reaction_speeds = np.zeros(3)
 
         for i in range(self.n):
 
             # store speed from last step
-            self.old_reaction_speeds = self.reaction_speeds
-            self.reaction_speeds = reaction_speeds[i]
+            self.last_reaction_speeds = self.curr_reaction_speeds
+            self.curr_reaction_speeds = self.reaction_speeds[i]
 
             # calculate reaction wheel acceleration
-            alpha = (self.reaction_speeds - self.old_reaction_speeds) / self.dt
+            alpha = (self.curr_reaction_speeds - self.last_reaction_speeds) / self.dt
             
             # progate through our EOMs
             # params: current quaternion, angular velocity, reaction wheel speed, tau(?), reaction wheel acceleration, time step
-            currState = EOMS.eoms(currState[:4], currState[4:], self.reaction_speeds, 0, alpha, self.dt)
+            currState = EOMS.eoms(currState[:4], currState[4:], self.curr_reaction_speeds, 0, alpha, self.dt)
 
             states = np.append(states, np.array([currState]), axis=0)
         
         # remove duplicate first element
         states = states[1:]
         
+        self.ideal_states = states
         return states
 
 
-    def generateData(self, states, magNoises, gyroNoises, hallNoises):
+    def generateData(self, magNoises, gyroNoises, hallNoises):
         '''
         generates fake data array (n x dim_mes)
         adds noise to the ideal states to mimic what our sensors would be giving us
@@ -200,10 +220,10 @@ class Filter():
         # calculate sensor b field for every time step (see h func for more info on state to measurement space conversion)
         # rotation matrix(q) * true B field + noise
         # first value, then all the otheres
-        B_sens = np.array([np.matmul(quaternion_rotation_matrix(states[0]), self.B_true)])
+        B_sens = np.array([np.matmul(quaternion_rotation_matrix(self.ideal_states[0]), self.B_true)])
         for a in range(1, self.n):
-            B_sens = np.append(B_sens, np.array([np.matmul(quaternion_rotation_matrix(states[a]), self.B_true)]), axis=0)
-            # print("{}: {}".format(a, np.matmul(quaternion_rotation_matrix(states[a]), self.B_true)))
+            B_sens = np.append(B_sens, np.array([np.matmul(quaternion_rotation_matrix(self.ideal_states[a]), self.B_true)]), axis=0)
+            # print("{}: {}".format(a, np.matmul(quaternion_rotation_matrix(self.ideal_states[a]), self.B_true)))
         
         # add noise
         B_sens += magNoises
@@ -215,41 +235,40 @@ class Filter():
             data[a][1] = B_sens[a][1]
             data[a][2] = B_sens[a][2]
             # add gyro noise to ideal angular velocity
-            data[a][3] = states[a][4] + gyroNoises[a][0]
-            data[a][4] = states[a][5] + gyroNoises[a][1]
-            data[a][5] = states[a][6] + gyroNoises[a][2]
+            data[a][3] = self.ideal_states[a][4] + gyroNoises[a][0]
+            data[a][4] = self.ideal_states[a][5] + gyroNoises[a][1]
+            data[a][5] = self.ideal_states[a][6] + gyroNoises[a][2]
 
+        self.data = data
         return data
 
 
-    def simulate(self, data, reaction_speeds):
+    def simulate(self):
         '''
         simulates the state estimation process for n time steps
-        runs the specified kalman filter upon the the object's initial state and passed data/reaction wheel speeds
-        returns 2D array of estimated states (quaternions, angular velocity) and innovation values and covariances
+        runs the specified kalman filter upon the the object's initial state and data/reaction wheel speeds for each time step
+            uses self.reaction_speeds: reaction wheel speed for each time step (n x 3) and self.data: data reading for each time step (n x dim_mes)
 
-        @params:
-            data: data reading for each time step (n x dim_mes)
-            reaction_speeds: reaction wheel speed for each time step (n x 3)
+        stores 2D array of estimated states (quaternions, angular velocity) in self.filter_states, covariances in self.covs, and innovation values and covariances in self.innovations/self.innovationCovs
         
         '''
 
         states = []
-        self.reaction_speeds = np.zeros(3)
+        self.curr_reaction_speeds = np.zeros(3)
         
         # run each of n steps through the filter
         for i in range(self.n):
             # store old reaction wheel speed
-            self.old_reaction_speeds = self.reaction_speeds
-            self.reaction_speeds = reaction_speeds[i]
+            self.old_reaction_speeds = self.curr_reaction_speeds
+            self.curr_reaction_speeds = self.reaction_speeds[i]
             
             # propagate current state through kalman filter and store estimated state and innovation
-            self.state, self.cov, innovation, innovationCov = self.kalmanMethod(self.state, self.cov, self.Q, self.R, self.B_true, self.reaction_speeds, self.old_reaction_speeds, data[i])
+            self.state, self.cov, self.innovations[i], self.innovationCovs[i] = self.kalmanMethod(self.state, self.cov, self.Q, self.R, self.B_true, self.curr_reaction_speeds, self.old_reaction_speeds, self.data[i])
 
-            self.innovations[i] = innovation
-            self.innovationCovs[i] = innovationCov
             states.append(self.state)
+            self.covs[i] = self.cov
 
+        self.filtered_states = states
         return states
 
 

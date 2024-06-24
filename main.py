@@ -100,12 +100,12 @@ if __name__ == "__main__":
 
     # create array of reaction wheel speed at each time step
     # parameters: max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
-    ideal_reaction_speeds = ukf.generateSpeeds(3000, -3000, ukf.n, 100, np.array([0, 1, 0]))
-    # print(ideal_reaction_speeds[:20])
+    ukf.generateSpeeds(3000, -3000, ukf.n, 100, np.array([0, 1, 0]))
+    # print(ukf.reaction_speeds[:20])
 
     # find ideal state of cubesat through physics equations of motion
-    ideal = ukf.propagate(ideal_reaction_speeds)
-    # print("state: ", ideal[:10])
+    ukf.propagate()
+    # print("state: ", ukf.ideal_states[:10])
 
     # set sensor noises
     # noise sd = noise density * sqrt(sampling rate)
@@ -126,18 +126,18 @@ if __name__ == "__main__":
     plot = 2
 
     # generate data reading for each step 
-    data = ukf.generateData(ideal, magNoises, gyroNoises, 0)
+    ukf.generateData(magNoises, gyroNoises, 0)
 
     # run our data through the specified kalman function (ukf)
-    filtered = ukf.simulate(data, ideal_reaction_speeds)
+    ukf.simulate()
 
-    # print("ideal: ", ideal[:3])
-    # print("data: ", data[:3])
-    # print("filtered: ", filtered[:3])
+    # print("ukf.ideal_states: ", ukf.ideal_states[:3])
+    # print("ukf.data: ", ukf.data[:3])
+    # print("filtered: ", ukf.filtered_states[:3])
 
-    plotState_xyz(ideal, True)
-    plotData_xyz(data)
-    plotState_xyz(filtered, False)
+    plotState_xyz(ukf.ideal_states, True)
+    plotData_xyz(ukf.data)
+    plotState_xyz(ukf.filtered_states, False)
 
 
     plotInnovations(ukf.innovations, ukf.innovationCovs)
@@ -146,16 +146,16 @@ if __name__ == "__main__":
 
 
     if plot == 1:
-        ukf.visualizeResults(filtered)
+        ukf.visualizeResults(ukf.filtered_states)
 
-        plotState_xyz(ideal, True)
-        plotData_xyz(data)
-        plotState_xyz(filtered, False)
+        plotState_xyz(ukf.ideal_states, True)
+        plotData_xyz(ukf.data)
+        plotState_xyz(ukf.filtered_states, False)
 
 
     elif plot == 0:
-        # ukf.visualizeResults(ideal)
-        ukf.visualizeResults(filtered)
+        # ukf.visualizeResults(ukf.ideal_states)
+        ukf.visualizeResults(ukf.filtered_states)
 
 
     # print(innovationTest(ukf.innovations, ukf.innovationCovs, ukf.dim_mes))
@@ -176,8 +176,8 @@ if __name__ == "__main__":
     plt.show()
 
         
-    # # plot3DVectors(np.array([ukf.B_true, data[50][:3], data[100][:3], data[150][:3]]), 121)
+    # # plot3DVectors(np.array([ukf.B_true, ukf.data[50][:3], ukf.data[100][:3], ukf.data[150][:3]]), 121)
     # plot3DVectors(result, 111)
-    # plotData3D(data, 5, 111)
-    # ideal_xyz = [np.matmul(quaternion_rotation_matrix(x), np.array([1, 0, 0])) for x in ideal]
+    # plotData3D(ukf.data, 5, 111)
+    # ideal_xyz = [np.matmul(quaternion_rotation_matrix(x), np.array([1, 0, 0])) for x in ukf.ideal_states]
     # plotData3D(ideal_xyz, 3, 111)
