@@ -42,7 +42,6 @@ notes:
 
 TODO:
     speed testing + other correctness tests?
-    rewrite filter class to hold entire data sets
     rewrite visualization/plotting functions for coherency and wrap in Filter class (plot all 3 on 1 graph with different line types) (see graphing.py)
     which method is correct for normalized innovation covariance (test #2)? (and which CI?) (see tests.py)
         should interval bound be added to measurement, 0, or average?
@@ -74,7 +73,7 @@ if __name__ == "__main__":
     # ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([1, 0, 0]), np.array([0, 0, 0]), UKF)
 
     # Our North West Up true magnetic field in stenson remick should be: 19.42900375, 1.74830615, 49.13746833 [micro Teslas]
-    ukf = Filter(100, 0.1, 7, 6, 0, 0, np.array([19, 1.7, 49]), np.array([0, 0, 0]), UKF)
+    ukf = Filter(200, 0.1, 7, 6, 0, 0, np.array([19, 1.7, 49]), np.array([0, 0, 0]), UKF)
     
     # clear output directory from last simulation
     clearDir(outputDir)
@@ -122,8 +121,8 @@ if __name__ == "__main__":
     gyroNoises = np.random.normal(0, gyroSD, (ukf.n, 3))
 
 
-    # 1 = plots + visualizer, 0 = visualizer only, 2 = none
-    plot = 2
+    # 0 = only create pdf output, 1 = also show 3D animation visualization
+    visualize = 0
 
     # generate data reading for each step 
     ukf.generateData(magNoises, gyroNoises, 0)
@@ -139,21 +138,13 @@ if __name__ == "__main__":
     plotData_xyz(ukf.data)
     plotState_xyz(ukf.filtered_states, False)
 
-
+    # test 1, 2, 3 respectively (see tests.py)
     plotInnovations(ukf.innovations, ukf.innovationCovs)
     sum = plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
     plotAutocorrelation(ukf.innovations)
 
 
-    if plot == 1:
-        ukf.visualizeResults(ukf.filtered_states)
-
-        plotState_xyz(ukf.ideal_states, True)
-        plotData_xyz(ukf.data)
-        plotState_xyz(ukf.filtered_states, False)
-
-
-    elif plot == 0:
+    if visualize == 1:
         # ukf.visualizeResults(ukf.ideal_states)
         ukf.visualizeResults(ukf.filtered_states)
 
@@ -162,7 +153,6 @@ if __name__ == "__main__":
 
     # print(autocorrelation2D(ukf.innovations)[0])
 
-    
     outputFile = "output.pdf"
 
     # savePNGs(outputDir)

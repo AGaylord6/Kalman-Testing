@@ -17,6 +17,7 @@ from irishsat_ukf.PySOL.wmm import *
 from irishsat_ukf.simulator import *
 from irishsat_ukf.UKF_algorithm import *
 from irishsat_ukf.hfunc import *
+import time
 
 
 class Filter():
@@ -70,6 +71,9 @@ class Filter():
 
         # what kalman filter to apply to this system
         self.kalmanMethod = kalmanMethod
+
+        # filter times for each step
+        self.times = np.zeros(n)
 
 
     def ukf_setR(self, magNoise, gyroNoise):
@@ -250,6 +254,7 @@ class Filter():
             uses self.reaction_speeds: reaction wheel speed for each time step (n x 3) and self.data: data reading for each time step (n x dim_mes)
 
         stores 2D array of estimated states (quaternions, angular velocity) in self.filter_states, covariances in self.covs, and innovation values and covariances in self.innovations/self.innovationCovs
+        also stores time taken for each estimation in self.times
         
         '''
 
@@ -262,8 +267,13 @@ class Filter():
             self.old_reaction_speeds = self.curr_reaction_speeds
             self.curr_reaction_speeds = self.reaction_speeds[i]
             
+            start = time.time()
             # propagate current state through kalman filter and store estimated state and innovation
             self.state, self.cov, self.innovations[i], self.innovationCovs[i] = self.kalmanMethod(self.state, self.cov, self.Q, self.R, self.B_true, self.curr_reaction_speeds, self.old_reaction_speeds, self.data[i])
+            end = time.time()
+
+            # store time taken for each step
+            self.times[i] = end - start
 
             states.append(self.state)
             self.covs[i] = self.cov

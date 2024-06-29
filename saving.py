@@ -99,7 +99,9 @@ def savePDF(outputFile, pngDir, filter, sum):
 
     testText = f"""We have two metrics for examining our filter: statistical and speed tests. 
 
-TODO: implement speed test + output time for n steps + average time per step.
+Speed tests:
+
+{filter.n} iterations were completed in {round(np.sum(filter.times) * 1000, 2)} milliseconds. This kalman filter took {round(np.mean(filter.times) * 1000, 2)} ms per iteration.
 
 The statistical tests are based on Estimation II by Ian Reid. He outlines 3 tests that examine the innovation (or residual) of the filter, which is the difference betwee a measurement and the filter's prediction. 
 
@@ -131,10 +133,10 @@ The statistical tests are based on Estimation II by Ian Reid. He outlines 3 test
     pdfHeader(pdf, "Test 2")
 
     # pdf.multi_cell(0, 5, "Sum of each innovation must be within chi square bounds " + str([round(x, 3) for x in chi2.interval(0.95, 100)]) + " (df=100)", 0, 'L')
-    pdf.multi_cell(0, 5, "Sum of each innovation must be within chi square bounds {} (df={})".format(str([round(x, 3) for x in chi2.interval(0.95, 100)]), filter.n), 0, 'L')
+    pdf.multi_cell(0, 5, "Sum of each innovation must be within chi square bounds {} (df={})".format(str([round(x, 3) for x in chi2.interval(0.95, filter.n)]), filter.n), 0, 'L')
 
     # pdf.multi_cell(0, 5, "Total sum " + str(round(sum, 3)) + " must be within interval " + str([round(x, 3) for x in chi2.interval(0.95, 600)]) + " (df=600)", 0, 'L')
-    pdf.multi_cell(0, 5, "Total sum {} must be within 95% interval {} (df={})".format(str(round(sum, 3)), str([round(x, 3) for x in chi2.interval(0.95, 600)]), filter.n * filter.dim_mes), 0, 'L')
+    pdf.multi_cell(0, 5, "Total sum {} must be within 95% interval {} (df={})".format(str(round(sum, 3)), str([round(x, 3) for x in chi2.interval(0.95, filter.n*6)]), filter.n * filter.dim_mes), 0, 'L')
 
     pdf.multi_cell(0, 5, "If distributions are too small, decrease measurement/process noise (and vice versa)", 0, 'L')
 
