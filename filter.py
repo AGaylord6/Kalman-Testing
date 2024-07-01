@@ -18,10 +18,13 @@ from irishsat_ukf.simulator import *
 from irishsat_ukf.UKF_algorithm import *
 from irishsat_ukf.hfunc import *
 import time
+from graphing import *
+from tests import *
+from saving import *
 
 
 class Filter():
-    def __init__ (self, n, dt, dim, dim_mes, r_mag, q_mag, B_true, reaction_speeds, kalmanMethod):
+    def __init__ (self, n, dt, dim, dim_mes, r_mag, q_mag, B_true, reaction_speeds, ideal_known, kalmanMethod):
         # number of steps to simulate
         self.n = n
         # timestep between steps
@@ -62,6 +65,9 @@ class Filter():
 
         # ideal states from EOMs for all n steps
         self.ideal_states = np.zeros((n, dim))
+
+        # indicates whether we know our ideal states or not (i.e. if we are simulating or not)
+        self.ideal_known = ideal_known
 
         # kalman filtered states for all n steps
         self.filtered_states = np.zeros((n, dim))
@@ -282,6 +288,53 @@ class Filter():
         return states
 
 
+    def plotData(self):
+        '''
+        plots the magnetometer (magData.png) and gyroscope data (magData.png) found in self.data
+        '''
+        plotData_xyz(self.data)
+
+
+    def plotStates(self):
+        '''
+        plots the filtered states (filteredQuaternion.png, filteredVelocity.png) found in self.filtered_states
+        also plots ideal states (idealQuaternion.png, idealVelocity.png) found in self.ideal_states if self.ideal_known = True
+        '''
+        if self.ideal_known:
+            plotState_xyz(self.ideal_states, self.ideal_known)
+        plotState_xyz(self.filtered_states, False)
+
+    
+    def runTests(self):
+        '''
+        runs 3 statistical tests on filter results according to Estimation II by Ian Reed:
+            1. innovation test
+            2. innovation squared test
+            3. autocorrelation test
+        
+        creates approriate plots, prints info to command line, and returns the sum of innovations squared
+        '''
+        # test 1, 2, 3 respectively (see tests.py)
+        plotInnovations(self.innovations, self.innovationCovs)
+        sum = plotInnovationSquared(self.innovations, self.innovationCovs)
+        plotAutocorrelation(self.innovations)
+        return sum
+    
+
+    def saveFile(self, fileName, sum):
+        '''
+        takes all saved pngs and compiles a pdf with the given fileName
+        uses the formating funciton found within saving.py
+        stores in outputDir global variable declared in saving.py and opens completed file
+        '''
+
+        # savePNGs(outputDir)
+
+        savePDF(fileName, outputDir, self, sum)
+
+        openFile(fileName)
+
+
     def visualizeResults(self, states):
         # TODO: rewrite functions that visualize different data sets: ideal, filtered, data
         #   with plotting, cubesat, etc
@@ -289,5 +342,4 @@ class Filter():
         # or visualize 3 things: raw, filtered, ideal
 
         game_visualize(np.array(states), 0)
-
-    #TODO: function for innovations
+    

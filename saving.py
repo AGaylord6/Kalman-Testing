@@ -57,18 +57,20 @@ def savePDF(outputFile, pngDir, filter, sum):
     # title and document details
     pdfHeader(pdf, title)
 
-    # Graphical output of simulating the proposed kalman filter ({filter.kalmanMethod}) for {filter.n} time steps. 
-    introText = f"""Ideal behavior is dictated by our propogating initial state and reaction wheel info for each step through our Equations of Motion (EOMs) and the true magnetic field ({filter.B_true[0]}, {filter.B_true[1]}, {filter.B_true[2]} microteslas)."""
-    
-    pdf.multi_cell(0, 5, introText, 0, 'L')
+    # if we are running with real data and do not know ideal behavior, leave that page out
+    if filter.ideal_known:
+        # Graphical output of simulating the proposed kalman filter ({filter.kalmanMethod}) for {filter.n} time steps. 
+        introText = f"""Ideal behavior is dictated by our propogating initial state and reaction wheel info for each step through our Equations of Motion (EOMs) and the true magnetic field ({filter.B_true[0]}, {filter.B_true[1]}, {filter.B_true[2]} microteslas)."""
+        
+        pdf.multi_cell(0, 5, introText, 0, 'L')
 
-    pdf.image(os.path.join(pngDirectory, "idealQuaternion.png"), x=10, y=pdf.get_y(), w=180)
-    pdf.ln(128)
-    pdf.image(os.path.join(pngDirectory, "idealVelocity.png"), x=10, y=pdf.get_y(), w=180)
+        pdf.image(os.path.join(pngDirectory, "idealQuaternion.png"), x=10, y=pdf.get_y(), w=180)
+        pdf.ln(128)
+        pdf.image(os.path.join(pngDirectory, "idealVelocity.png"), x=10, y=pdf.get_y(), w=180)
 
-    pdf.add_page()
+        pdf.add_page()
 
-    pdfHeader(pdf, "Data")
+        pdfHeader(pdf, "Data")
 
     magSD = (140 * 10e-6) * np.sqrt(200)
     gyroSD = 0.0035 * np.sqrt(200)

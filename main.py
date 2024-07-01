@@ -41,7 +41,7 @@ notes:
     user must pip install fpdf
 
 TODO:
-    speed testing + other correctness tests?
+    other correctness tests?
     rewrite visualization/plotting functions for coherency and wrap in Filter class (plot all 3 on 1 graph with different line types) (see graphing.py)
     which method is correct for normalized innovation covariance (test #2)? (and which CI?) (see tests.py)
         should interval bound be added to measurement, 0, or average?
@@ -69,11 +69,11 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
 
     # create unscented kalman filter object
-    # parameters: # of steps to simulate, timestep, state space dimension, measurement space dimension, measurement noise, process noise, true magnetic field, starting reaction wheel speed, filter type
-    # ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([1, 0, 0]), np.array([0, 0, 0]), UKF)
+    # parameters: # of steps to simulate, timestep, state space dimension, measurement space dimension, measurement noise, process noise, true magnetic field, starting reaction wheel speed, whether we know ideal, filter type
+    # ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([1, 0, 0]), np.array([0, 0, 0]), True, UKF)
 
     # Our North West Up true magnetic field in stenson remick should be: 19.42900375, 1.74830615, 49.13746833 [micro Teslas]
-    ukf = Filter(200, 0.1, 7, 6, 0, 0, np.array([19, 1.7, 49]), np.array([0, 0, 0]), UKF)
+    ukf = Filter(200, 0.1, 7, 6, 0, 0, np.array([19, 1.7, 49]), np.array([0, 0, 0]), True, UKF)
     
     # clear output directory from last simulation
     clearDir(outputDir)
@@ -85,7 +85,6 @@ if __name__ == "__main__":
     ukf.ukf_setQ(.00001, 10)
     # good for test 2
     ukf.ukf_setQ(.00001, 10)
-
 
 
     # set measurement noise
@@ -134,33 +133,19 @@ if __name__ == "__main__":
     # print("ukf.data: ", ukf.data[:3])
     # print("filtered: ", ukf.filtered_states[:3])
 
-    plotState_xyz(ukf.ideal_states, True)
-    plotData_xyz(ukf.data)
-    plotState_xyz(ukf.filtered_states, False)
+    ukf.plotData()
+    # plots filtered states (and ideal states if ideal_konwn = True)
+    ukf.plotStates()
 
-    # test 1, 2, 3 respectively (see tests.py)
-    plotInnovations(ukf.innovations, ukf.innovationCovs)
-    sum = plotInnovationSquared(ukf.innovations, ukf.innovationCovs)
-    plotAutocorrelation(ukf.innovations)
-
+    sum = ukf.runTests()
 
     if visualize == 1:
         # ukf.visualizeResults(ukf.ideal_states)
         ukf.visualizeResults(ukf.filtered_states)
 
-
-    # print(innovationTest(ukf.innovations, ukf.innovationCovs, ukf.dim_mes))
-
-    # print(autocorrelation2D(ukf.innovations)[0])
-
     outputFile = "output.pdf"
 
-    # savePNGs(outputDir)
-
-    # outputDir is global variable declared in saving.py
-    savePDF(outputFile, outputDir, ukf, sum)
-
-    openFile(outputFile)
+    ukf.saveFile(outputFile, sum)
     
     # only show plot at end so they all show up
     plt.show()
