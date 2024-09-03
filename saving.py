@@ -57,6 +57,10 @@ def savePDF(outputFile, pngDir, filter, sum):
     # title and document details
     pdfHeader(pdf, title)
 
+    magSD = (140 * 10e-6) * np.sqrt(200)
+    gyroSD = 0.0035 * np.sqrt(200)
+    dataText = ""
+
     # if we are running with real data and do not know ideal behavior, leave that page out
     if filter.ideal_known:
         # Graphical output of simulating the proposed kalman filter ({filter.kalmanMethod}) for {filter.n} time steps. 
@@ -72,9 +76,11 @@ def savePDF(outputFile, pngDir, filter, sum):
 
         pdfHeader(pdf, "Data")
 
-    magSD = (140 * 10e-6) * np.sqrt(200)
-    gyroSD = 0.0035 * np.sqrt(200)
-    dataText = f"""Simulate IMU data by adding noise to our ideal states in measurement space. For vn100, magnetometer noise = {magSD} and gyroscope noise = {gyroSD}."""
+        dataText = f"""Simulate IMU data by adding noise to our ideal states in measurement space. For vn100, magnetometer noise = {magSD} and gyroscope noise = {gyroSD}."""
+
+    else:
+
+        dataText = f"""IMU sensor data in true magnetic field of ({filter.B_true[0]}, {filter.B_true[1]}, {filter.B_true[2]}. For vn100, magnetometer noise = {magSD} and gyroscope noise = {gyroSD}."""
 
     pdf.multi_cell(0, 5, dataText, 0, 'L')
 

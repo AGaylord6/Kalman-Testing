@@ -251,6 +251,31 @@ class Filter():
 
         self.data = data
         return data
+    
+
+    def loadData(self, fileName):
+        '''
+        alternate to sumulate and generateData. used when ideal_known = False
+        populates self.data with sensor data from file
+        populates self.reaction_speeds with reaction wheel speeds from file
+
+        @params:
+            fileName: name of file to load data from
+        '''
+        # data is in the format a, b, c, x, y, z, e, f, g
+        # a, b, c are magnetic field in state space readings, x, y, z are angular velocity, e, f, g are reaction wheel speeds
+        # each line is a new time step
+        # read in file line by line and store data and reaction wheel speeds in self.data and self.reaction_speeds
+        data = []
+        speeds = []
+        with open(fileName, 'r') as file:
+            for line in file:
+                data.append(np.array([float(x) for x in line.split(",")[:6]]))
+                speeds.append(np.array([float(x) for x in line.split(",")[6:]]))
+        
+        self.data = np.array(data)
+        self.reaction_speeds = np.array(speeds)
+        return data
 
 
     def simulate(self):

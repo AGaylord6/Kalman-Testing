@@ -42,6 +42,8 @@ notes:
 
 TODO:
     other correctness tests?
+    print filter parameters used in each run in doc (R, Q, etc)
+    test data file reading
     rewrite visualization/plotting functions for coherency and wrap in Filter class (plot all 3 on 1 graph with different line types) (see graphing.py)
     which method is correct for normalized innovation covariance (test #2)? (and which CI?) (see tests.py)
         should interval bound be added to measurement, 0, or average?
@@ -49,7 +51,7 @@ TODO:
 optional:
     more comprehensive plotting: wrappers, options
     flesh out 3D graphs more: colors, many at once (ideal, data, filtered)
-    generate fake imu data using matlab functionality??
+    generate fake imu data using matlab functionality, or generate imu data sets??
     change innovation plots so that upper and lower bounds are same color
 
 '''
@@ -69,14 +71,21 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
 
     # create unscented kalman filter object
-    # parameters: # of steps to simulate, timestep, state space dimension, measurement space dimension, measurement noise, process noise, true magnetic field, starting reaction wheel speed, whether we know ideal, filter type
-    # ukf = Filter(350, 0.1, 7, 6, 0, 0, np.array([1, 0, 0]), np.array([0, 0, 0]), True, UKF)
-
     # Our North West Up true magnetic field in stenson remick should be: 19.42900375, 1.74830615, 49.13746833 [micro Teslas]
-    ukf = Filter(200, 0.1, 7, 6, 0, 0, np.array([19, 1.7, 49]), np.array([0, 0, 0]), True, UKF)
+    ukf = Filter(200,                       # number of steps to simulate
+                 0.1,                       # timestep
+                 7, 6,                      # state space dimension, measurement space dimension
+                 0, 0,                      # measurement noise, process noise (overwritten later)
+                 np.array([19, 1.7, 49]),   # true magnetic field
+                 np.array([0, 0, 0]),       # starting reaction wheel speed
+                 True,                      # whether we know ideal state or we are using actual sensor data
+                 UKF)                       # filter type
     
     # clear output directory from last simulation
     clearDir(outputDir)
+
+    # text file with data values
+    dataFile = "data.txt"
 
     # set process noise
     # parameters: noise magnitude, k (see Estimation II article by Ian Reed)
@@ -96,35 +105,44 @@ if __name__ == "__main__":
     ukf.ukf_setR(.00025, .0025)
 
 
-    # create array of reaction wheel speed at each time step
-    # parameters: max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
-    ukf.generateSpeeds(3000, -3000, ukf.n, 100, np.array([0, 1, 0]))
-    # print(ukf.reaction_speeds[:20])
+    # if we aren't using real sensor data, we need to make up reaction wheel speeds, find ideal state, and generate fake data
+    if ukf.ideal_known:
 
-    # find ideal state of cubesat through physics equations of motion
-    ukf.propagate()
-    # print("state: ", ukf.ideal_states[:10])
+        # create array of reaction wheel speed at each time step
+        # parameters: max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
+        ukf.generateSpeeds(3000, -3000, ukf.n, 100, np.array([0, 1, 0]))
+        # print(ukf.reaction_speeds[:20])
 
-    # set sensor noises
-    # noise sd = noise density * sqrt(sampling rate)
-    # vn100 imu sampling rate from user manual = 200 Hz
+        # find ideal state of cubesat through physics equations of motion
+        ukf.propagate()
+        # print("state: ", ukf.ideal_states[:10])
+
+        # set sensor noises
+        # noise sd = noise density * sqrt(sampling rate)
+        # vn100 imu sampling rate from user manual = 200 Hz
+        
+        # magNoises = np.random.normal(0, .035, (ukf.n, 3))
+        # mag noise density from vn100 website = 140 uGauss /sqrt(Hz)
+        magSD = (140 * 10e-6) * np.sqrt(200)
+        magNoises = np.random.normal(0, magSD, (ukf.n, 3))
+
+        # gyroNoises = np.random.normal(0, .01, (ukf.n, 3))
+        # gyro noise density from vn100 website = 0.0035 /s /sqrt(Hz)
+        gyroSD = 0.0035 * np.sqrt(200)
+        gyroNoises = np.random.normal(0, gyroSD, (ukf.n, 3))
+
+
+        # 0 = only create pdf output, 1 = also show 3D animation visualization
+        visualize = 0
+
+        # generate data reading for each step 
+        ukf.generateData(magNoises, gyroNoises, 0)
     
-    # magNoises = np.random.normal(0, .035, (ukf.n, 3))
-    # mag noise density from vn100 website = 140 uGauss /sqrt(Hz)
-    magSD = (140 * 10e-6) * np.sqrt(200)
-    magNoises = np.random.normal(0, magSD, (ukf.n, 3))
+    else:
+        # load sensor data from file
+        # this populates ukf.data and ukf.reaction_speeds
+        ukf.loadData(dataFile)
 
-    # gyroNoises = np.random.normal(0, .01, (ukf.n, 3))
-    # gyro noise density from vn100 website = 0.0035 /s /sqrt(Hz)
-    gyroSD = 0.0035 * np.sqrt(200)
-    gyroNoises = np.random.normal(0, gyroSD, (ukf.n, 3))
-
-
-    # 0 = only create pdf output, 1 = also show 3D animation visualization
-    visualize = 0
-
-    # generate data reading for each step 
-    ukf.generateData(magNoises, gyroNoises, 0)
 
     # run our data through the specified kalman function (ukf)
     ukf.simulate()
