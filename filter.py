@@ -6,10 +6,6 @@ contains filter class for an arbitrary kalman filter
 object contains system info, initialized values, state values, and filter specifications
 class functions allow for easy initialization, propagation, data generation, simulation, and visualization
 
-TODO: 
-    add testing functionality
-    rewrite class attributes to store state/data/reaction wheel speeds for all n steps
-
 '''
 
 
@@ -213,6 +209,15 @@ class Filter():
         
         self.ideal_states = states
         return states
+    
+
+    def propagate_step(self, i):
+
+        # get updated inertia constants and make global
+
+        # use the previous state and wheel speeds to calculate the next ideal state
+
+        return 0
 
 
     def generateData(self, magNoises, gyroNoises, hallNoises):
@@ -251,6 +256,17 @@ class Filter():
 
         self.data = data
         return data
+    
+
+    def generateData_step(self, i):
+
+        # use current B field of earth to transform ideal state to measurement space + add noise
+
+        # get ideal speed + add noise
+
+        # update data array
+
+        return 0
     
 
     def loadData(self, fileName):
@@ -311,6 +327,20 @@ class Filter():
 
         self.filtered_states = states
         return states
+    
+
+    def simulate_step(self, i, target):
+
+        # run last state, reaction wheel speed, and data through filter
+
+        # run state through our controls to get pwms
+
+        # convert pwms to reaction wheel speeds and update next speeds
+
+        # time step
+
+
+        return 0
 
 
     def plotData(self):

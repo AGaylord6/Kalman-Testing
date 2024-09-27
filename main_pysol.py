@@ -28,31 +28,14 @@ import signal
 
 '''
 
-resources used:
-State estimation II by Ian Reed
-https://github.com/FrancoisCarouge/Kalman
-https://www.researchgate.net/post/How_can_I_validate_the_Kalman_Filter_result
-https://stats.stackexchange.com/questions/40466/how-can-i-debug-and-check-the-consistency-of-a-kalman-filter
-WikibookonKalmanFilter.pdf
+PySOL tells us the B field, ECI, ECEF, LLA
 
-notes:
-    must ensure quaternion is normalized when output by EOMs
-    added innovation and innovation covariance to UKF_algorithm
-    user must pip install fpdf
 
-TODO:
-    add controls + target, integrate PySOL
-    other correctness tests?
-    print filter parameters used in each run in doc (R, Q, etc)
-    test data file reading + update for wheels
-    which method is correct for normalized innovation covariance (test #2)? (and which CI?) (see tests.py)
-        should interval bound be added to measurement, 0, or average?
+Still must figure out ideal state based on previous state and EOMs
 
-optional:
-    more comprehensive plotting: wrappers, options
-    rewrite visualization/plotting functions for coherency and wrap in Filter class (plot all 3 on 1 graph with different line types) (see graphing.py)
-    flesh out 3D graphs more: colors, many at once (ideal, data, filtered)
-    generate fake imu data using matlab functionality, or generate imu data sets??
+Can get fake sensor mag data by rotating B field by ideal quaternion
+
+Fake gyro data by adding noise to ideal angular velocity
 
 '''
 
@@ -108,15 +91,6 @@ if __name__ == "__main__":
     # if we aren't using real sensor data, we need to make up reaction wheel speeds, find ideal state, and generate fake data
     if ukf.ideal_known:
 
-        # create array of reaction wheel speed at each time step
-        # parameters: max speed, min speed, number of steps to flip speed after, step, bitset of which wheels to activate
-        ukf.generateSpeeds(3000, -3000, ukf.n, 100, np.array([0, 1, 0]))
-        # print(ukf.reaction_speeds[:20])
-
-        # find ideal state of cubesat through physics equations of motion
-        ukf.propagate()
-        # print("state: ", ukf.ideal_states[:10])
-
         # set sensor noises
         # noise sd = noise density * sqrt(sampling rate)
         # vn100 imu sampling rate from user manual = 200 Hz
@@ -140,12 +114,9 @@ if __name__ == "__main__":
         ukf.loadData(dataFile)
 
 
-    # run our data through the specified kalman function (ukf)
-    ukf.simulate()
+    # TODO: create loop for propogation, data creation, simulation
+    # add B field graphs to save or just show
 
-    # print("ukf.ideal_states: ", ukf.ideal_states[:3])
-    # print("ukf.data: ", ukf.data[:3])
-    # print("filtered: ", ukf.filtered_states[:3])
 
     ukf.plotData()
     # plots filtered states (and ideal states if ideal_konwn = True)
@@ -168,9 +139,3 @@ if __name__ == "__main__":
     # only show plot at end so they all show up
     plt.show()
 
-        
-    # # plot3DVectors(np.array([ukf.B_true, ukf.data[50][:3], ukf.data[100][:3], ukf.data[150][:3]]), 121)
-    # plot3DVectors(result, 111)
-    # plotData3D(ukf.data, 5, 111)
-    # ideal_xyz = [np.matmul(quaternion_rotation_matrix(x), np.array([1, 0, 0])) for x in ukf.ideal_states]
-    # plotData3D(ideal_xyz, 3, 111)
