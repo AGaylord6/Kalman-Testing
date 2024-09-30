@@ -17,6 +17,7 @@ import time
 from graphing import *
 from tests import *
 from saving import *
+from main_pysol import current_to_speed
 
 
 class Filter():
@@ -47,6 +48,11 @@ class Filter():
 
         # true magnetic field for simulation
         self.B_true = B_true
+
+        # Motor states
+        i = np.array([0, 0, 0, 0]) # Current to each motor
+        Th_Ta = np.array([0, 0, 0, 0]) # diff in temp between housing and ambient
+        Tw_Ta = np.array([0, 0, 0, 0]) # diff in temp between winding and ambient
 
         # 1x3 array of current reaction wheel speeds
         self.curr_reaction_speeds = reaction_speeds
@@ -329,13 +335,39 @@ class Filter():
         return states
     
 
-    def simulate_step(self, i, target):
+    def simulate_step(self, params, target):
 
         # run last state, reaction wheel speed, and data through filter
 
         # run state through our controls to get pwms
 
+        # update our temperature and current variables
+
+        external_torque = np.array([0, 0, 0, 0])
+        # convert from pwm to voltage
+        voltage = (9/65535) * self.pwm 
+        Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
+
+        self.i = (voltage - self.i*Rw - params.Kv*self.curr_reaction_speeds)/params.Lw
+        self.Th_Ta = ((self.Th_Ta - self.Tw_Ta)/params.Rwh - self.Th_Ta/params.Rha)/params.Cha
+        self.Tw_Ta = (self.i**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
+
         # convert pwms to reaction wheel speeds and update next speeds
+        next_speeds = current_to_speed(self.i, external_torque, self.curr_reaction_speeds)
+        # J = inertia, L = tau (torque), omega = angular velocity
+        #   i (current, based on voltage), Th_Ta (temp diff between housing and ambient), and Tw_Ta (winding and ambient) are states he's tracking that we don't care about
+        #   l_w is torque produced by pwm
+        #   H_B_w is angular momentum of wheel
+        #   J_w is 2D array of moment of inertias of wheels (= rw_config)
+        #   omega_B is angular velocity of body, omega_w is angular velocity of wheel
+        #   Rw is winding resistance (depends on temp)
+        #   he gets the pwm (u = input) from the solution states... but doesn't actually implement states. just based on time. 
+            # tau_e = external torque. last 4 elements of input array
+            # omega_w = last wheel speed
+
+        # use alpha_rw or omega_w_dot (would have to impliment wheel info) to calc H_B_w_dot/L_w???
+        # why do we *dt and add instead of just returning new?
+        # i_trans to edit intertia of body??
 
         # time step
 
