@@ -46,7 +46,7 @@ class Filter():
         self.innovations = np.zeros((n, dim_mes))
         self.innovationCovs = np.zeros((n, dim_mes, dim_mes))
 
-        # true magnetic field for simulation
+        # true magnetic field for every timestep in simulation
         self.B_true = np.full((n, 3), B_true)
 
         # Motor states
@@ -54,13 +54,14 @@ class Filter():
         self.Th_Ta = np.array([0, 0, 0, 0]) # diff in temp between housing and ambient
         self.Tw_Ta = np.array([0, 0, 0, 0]) # diff in temp between winding and ambient
 
-        # 1x3 array of current reaction wheel speeds
+        # 1x4 array of current reaction wheel speeds
         self.curr_reaction_speeds = reaction_speeds
         # reaction wheel speed of last time step
         self.last_reaction_speeds = np.zeros(4)
 
         # reaction wheel speeds for all n steps
         self.reaction_speeds = np.zeros((n, 4))
+        self.reaction_speeds[0] = reaction_speeds
 
         # get moment of inertia of body of satellite
         I_body = params.J_B
@@ -75,15 +76,18 @@ class Filter():
 
         # ideal states from EOMs for all n steps
         self.ideal_states = np.zeros((n, dim))
+        self.ideal_states[0] = self.state
 
         # indicates whether we know our ideal states or not (i.e. if we are simulating or not)
         self.ideal_known = ideal_known
 
         # kalman filtered states for all n steps
         self.filtered_states = np.zeros((n, dim))
+        self.filtered_states[0] = self.state
 
         # covariance of system for all n steps
         self.covs = np.zeros((n, dim, dim))
+        self.covs[0] = self.cov
 
         # what kalman filter to apply to this system
         self.kalmanMethod = kalmanMethod
@@ -227,8 +231,8 @@ class Filter():
 
     def propagate_step(self, i):
 
-        currQuat = self.filtered_states[i][:4]
-        currVel = self.filtered_states[i][4:]
+        currQuat = self.filtered_states[i - 1][:4]
+        currVel = self.filtered_states[i - 1][4:]
         # currQuat = self.ideal_states[i][:4]
         # currVel = self.ideal_states[i][4:]
         
@@ -244,7 +248,7 @@ class Filter():
         currState = self.EOMS.eoms(currQuat, currVel, self.curr_reaction_speeds, np.zeros(3), alpha, self.dt)
 
         # update next state
-        self.ideal_states[i+1] = currState
+        self.ideal_states[i] = currState
 
         return currState
 
@@ -287,13 +291,24 @@ class Filter():
         return data
     
 
-    def generateData_step(self, i):
+    def generateData_step(self, i, magNoise, gyroNoise):
 
+        data = np.zeros(self.dim_mes)
+
+        # calculate sensor b field for current time step (see h func for more info on state to measurement space conversion)
         # use current B field of earth to transform ideal state to measurement space + add noise
+        # rotation matrix(q) * true B field + noise
+        B_sens = np.array([np.matmul(quaternion_rotation_matrix(self.ideal_states[i]), self.B_true[i])]) + magNoise
 
-        # get ideal speed + add noise
+        data[:3] = B_sens
+
+        # get predicted speed of this state + noise to mimic gyro reading
+        data[3] = self.ideal_states[i][4] + gyroNoise[0]
+        data[4] = self.ideal_states[i][5] + gyroNoise[1]
+        data[5] = self.ideal_states[i][6] + gyroNoise[2]
 
         # update data array
+        self.data[i] = data
 
         return 0
     

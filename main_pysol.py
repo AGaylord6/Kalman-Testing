@@ -146,7 +146,6 @@ if __name__ == "__main__":
 
         ukf.generateSpeeds(1000, -1000, ukf.n/2, 100, np.array([0, 1, 0, 0]))
 
-
         # set sensor noises
         # noise sd = noise density * sqrt(sampling rate)
         # vn100 imu sampling rate from user manual = 200 Hz
@@ -169,9 +168,10 @@ if __name__ == "__main__":
         # this populates ukf.data and ukf.reaction_speeds
         ukf.loadData(dataFile)
 
-    ukf.ideal_states[0] = ukf.state
+    # set first data point
+    ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
-    for i in range(ukf.n - 1):
+    for i in range(1, ukf.n):
 
         # get ideal next state based on current state and reaction wheel speeds of this step
         ukf.propagate_step(i)
@@ -179,9 +179,11 @@ if __name__ == "__main__":
         
         # create mag data using transform and orbit data
         # create gyro data by adding noise to ideal
+        ukf.generateData_step(i, magNoises[i], gyroNoises[i])
 
         # filter our data and get next state
         # also run through our controls to get pwm => voltage => current => speed of reaction wheels
+        ukf.filtered_states[i] = ukf.ideal_states[i]
 
 
     # TODO: impliment PySol and print B field 
