@@ -17,7 +17,7 @@ import time
 from graphing import *
 from tests import *
 from saving import *
-from main_pysol import current_to_speed
+from main_pysol import current_to_speed, params
 
 
 class Filter():
@@ -47,20 +47,28 @@ class Filter():
         self.innovationCovs = np.zeros((n, dim_mes, dim_mes))
 
         # true magnetic field for simulation
-        self.B_true = B_true
+        self.B_true = np.full((n, 3), B_true)
 
         # Motor states
-        i = np.array([0, 0, 0, 0]) # Current to each motor
-        Th_Ta = np.array([0, 0, 0, 0]) # diff in temp between housing and ambient
-        Tw_Ta = np.array([0, 0, 0, 0]) # diff in temp between winding and ambient
+        self.i = np.array([0, 0, 0, 0]) # Current to each motor
+        self.Th_Ta = np.array([0, 0, 0, 0]) # diff in temp between housing and ambient
+        self.Tw_Ta = np.array([0, 0, 0, 0]) # diff in temp between winding and ambient
 
         # 1x3 array of current reaction wheel speeds
         self.curr_reaction_speeds = reaction_speeds
         # reaction wheel speed of last time step
-        self.last_reaction_speeds = np.zeros(3)
+        self.last_reaction_speeds = np.zeros(4)
 
         # reaction wheel speeds for all n steps
-        self.reaction_speeds = np.zeros((n, 3))
+        self.reaction_speeds = np.zeros((n, 4))
+
+        # get moment of inertia of body of satellite
+        I_body = params.J_B
+        # I_spin = 5.1e-7
+        I_spin = 1e-7
+        I_trans = 0
+        # intialize EOMs using intertia measurements of cubeSat
+        self.EOMS = TEST1EOMS(I_body, I_spin, I_trans)
 
         # data values for all n steps
         self.data = np.zeros((n, dim_mes))
@@ -151,7 +159,7 @@ class Filter():
             elif thing > min and a > flipSteps:
                 thing -= step
             
-            result = np.array([thing, thing, thing])
+            result = np.array([thing, thing, thing, thing])
             # multiply by bitset to only get speed on proper axis
             result = indices * result
             ideal_reaction_speeds.append(result)
@@ -180,13 +188,13 @@ class Filter():
         # # use attitude propagator to find actual ideal quaternion for n steps
         # states = propagator.propagate_states(t0, tf, self.n)
 
-        # intertia constants of cubesat from juwan
-        I_body = I_body_sat * 1e-7
-        I_spin = 5.1e-7
-        # I_trans = 5.1e-7
-        I_trans = 0
-        # intialize EOMs using intertia measurements of cubeSat
-        EOMS = TEST1EOMS(I_body, I_spin, I_trans)
+        # # intertia constants of cubesat from juwan
+        # I_body = I_body_sat * 1e-7
+        # I_spin = 5.1e-7
+        # # I_trans = 5.1e-7
+        # I_trans = 0
+        # # intialize EOMs using intertia measurements of cubeSat
+        # EOMS = TEST1EOMS(I_body, I_spin, I_trans)
 
         currState = self.state
 
@@ -205,8 +213,8 @@ class Filter():
             alpha = (self.curr_reaction_speeds - self.last_reaction_speeds) / self.dt
             
             # progate through our EOMs
-            # params: current quaternion, angular velocity, reaction wheel speed, tau(?), reaction wheel acceleration, time step
-            currState = EOMS.eoms(currState[:4], currState[4:], self.curr_reaction_speeds, 0, alpha, self.dt)
+            # params: current quaternion, angular velocity, reaction wheel speed, external torque, reaction wheel acceleration, time step
+            currState = self.EOMS.eoms(currState[:4], currState[4:], self.curr_reaction_speeds, 0, alpha, self.dt)
 
             states = np.append(states, np.array([currState]), axis=0)
         
@@ -219,11 +227,26 @@ class Filter():
 
     def propagate_step(self, i):
 
-        # get updated inertia constants and make global
+        currQuat = self.filtered_states[i][:4]
+        currVel = self.filtered_states[i][4:]
+        # currQuat = self.ideal_states[i][:4]
+        # currVel = self.ideal_states[i][4:]
+        
+        # store speed from last step
+        # this should be handled by the controls section
+        # self.last_reaction_speeds = self.curr_reaction_speeds
+        # self.curr_reaction_speeds = self.reaction_speeds[i]
 
-        # use the previous state and wheel speeds to calculate the next ideal state
+        # calculate reaction wheel acceleration
+        alpha = (self.curr_reaction_speeds - self.last_reaction_speeds) / self.dt
 
-        return 0
+        # progate through our EOMs to get next ideal state
+        currState = self.EOMS.eoms(currQuat, currVel, self.curr_reaction_speeds, np.zeros(3), alpha, self.dt)
+
+        # update next state
+        self.ideal_states[i+1] = currState
+
+        return currState
 
 
     def generateData(self, magNoises, gyroNoises, hallNoises):
@@ -241,9 +264,9 @@ class Filter():
         # calculate sensor b field for every time step (see h func for more info on state to measurement space conversion)
         # rotation matrix(q) * true B field + noise
         # first value, then all the otheres
-        B_sens = np.array([np.matmul(quaternion_rotation_matrix(self.ideal_states[0]), self.B_true)])
+        B_sens = np.array([np.matmul(quaternion_rotation_matrix(self.ideal_states[0]), self.B_true[0])])
         for a in range(1, self.n):
-            B_sens = np.append(B_sens, np.array([np.matmul(quaternion_rotation_matrix(self.ideal_states[a]), self.B_true)]), axis=0)
+            B_sens = np.append(B_sens, np.array([np.matmul(quaternion_rotation_matrix(self.ideal_states[a]), self.B_true[a])]), axis=0)
             # print("{}: {}".format(a, np.matmul(quaternion_rotation_matrix(self.ideal_states[a]), self.B_true)))
         
         # add noise
@@ -322,7 +345,7 @@ class Filter():
             
             start = time.time()
             # propagate current state through kalman filter and store estimated state and innovation
-            self.state, self.cov, self.innovations[i], self.innovationCovs[i] = self.kalmanMethod(self.state, self.cov, self.Q, self.R, self.B_true, self.curr_reaction_speeds, self.old_reaction_speeds, self.data[i])
+            self.state, self.cov, self.innovations[i], self.innovationCovs[i] = self.kalmanMethod(self.state, self.cov, self.Q, self.R, self.B_true[i], self.curr_reaction_speeds, self.old_reaction_speeds, self.data[i])
             end = time.time()
 
             # store time taken for each step
@@ -352,7 +375,7 @@ class Filter():
         self.Th_Ta = ((self.Th_Ta - self.Tw_Ta)/params.Rwh - self.Th_Ta/params.Rha)/params.Cha
         self.Tw_Ta = (self.i**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
 
-        # convert pwms to reaction wheel speeds and update next speeds
+        # convert pwms to reaction wheel speeds and update next/last speeds
         next_speeds = current_to_speed(self.i, external_torque, self.curr_reaction_speeds)
         # J = inertia, L = tau (torque), omega = angular velocity
         #   i (current, based on voltage), Th_Ta (temp diff between housing and ambient), and Tw_Ta (winding and ambient) are states he's tracking that we don't care about

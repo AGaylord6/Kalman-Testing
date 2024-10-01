@@ -113,7 +113,7 @@ if __name__ == "__main__":
                  7, 6,                      # state space dimension, measurement space dimension
                  0, 0,                      # measurement noise, process noise (overwritten later)
                  np.array([19, 1.7, 49]),   # true magnetic field
-                 np.array([0, 0, 0]),       # starting reaction wheel speed
+                 np.array([0, 0, 0, 0]),    # starting reaction wheel speed
                  True,                      # whether we know ideal state or we are using actual sensor data
                  UKF)                       # filter type
     
@@ -144,6 +144,9 @@ if __name__ == "__main__":
     # if we aren't using real sensor data, we need to make up reaction wheel speeds, find ideal state, and generate fake data
     if ukf.ideal_known:
 
+        ukf.generateSpeeds(1000, -1000, ukf.n/2, 100, np.array([0, 1, 0, 0]))
+
+
         # set sensor noises
         # noise sd = noise density * sqrt(sampling rate)
         # vn100 imu sampling rate from user manual = 200 Hz
@@ -166,23 +169,36 @@ if __name__ == "__main__":
         # this populates ukf.data and ukf.reaction_speeds
         ukf.loadData(dataFile)
 
+    ukf.ideal_states[0] = ukf.state
 
-    # TODO: create loop for propogation, data creation, simulation
-    # add B field graphs to save or just show
+    for i in range(ukf.n - 1):
+
+        # get ideal next state based on current state and reaction wheel speeds of this step
+        ukf.propagate_step(i)
+        # game_visualize(np.array([ukf.propagate_step(i)]), i)
+        
+        # create mag data using transform and orbit data
+        # create gyro data by adding noise to ideal
+
+        # filter our data and get next state
+        # also run through our controls to get pwm => voltage => current => speed of reaction wheels
 
 
-    ukf.plotData()
-    # plots filtered states (and ideal states if ideal_konwn = True)
-    ukf.plotStates()
+    # TODO: impliment PySol and print B field 
 
-    sum = ukf.runTests()
+    # ukf.plotData()
+    # plots filtered states (and ideal states if ideal_known = True)
+    # ukf.plotStates()
 
-    # 0 = only create pdf output, 1 = also show 3D animation visualization
-    visualize = 0
+    # sum = ukf.runTests()
+
+    # 0 = only create pdf output, 1 = show 3D animation visualization
+    visualize = 1
 
     if visualize == 1:
         # ukf.visualizeResults(ukf.ideal_states)
-        ukf.visualizeResults(ukf.filtered_states)
+        # ukf.visualizeResults(ukf.filtered_states)
+        pass
     else:
 
         outputFile = "output.pdf"
