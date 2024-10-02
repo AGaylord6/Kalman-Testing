@@ -17,7 +17,7 @@ import time
 from graphing import *
 from tests import *
 from saving import *
-from main_pysol import current_to_speed, params
+from main_pysol import params
 from irishsat_ukf.adc_pd_controller_numpy import *
 
 
@@ -58,11 +58,13 @@ class Filter():
         # 1x4 array of current reaction wheel speeds
         self.curr_reaction_speeds = reaction_speeds
         # reaction wheel speed of last time step
-        self.last_reaction_speeds = np.zeros(4)
+        # self.last_reaction_speeds = np.zeros(4)
+        self.last_reaction_speeds = reaction_speeds
 
         # reaction wheel speeds for all n steps
         self.reaction_speeds = np.zeros((n, 4))
         self.reaction_speeds[0] = reaction_speeds
+        # self.reaction_speeds[1] = reaction_speeds
 
         # get moment of inertia of body of satellite
         I_body = params.J_B
@@ -241,8 +243,8 @@ class Filter():
 
         currQuat = self.filtered_states[i - 1][:4]
         currVel = self.filtered_states[i - 1][4:]
-        # currQuat = self.ideal_states[i][:4]
-        # currVel = self.ideal_states[i][4:]
+        # currQuat = self.ideal_states[i - 1][:4]
+        # currVel = self.ideal_states[i - 1][4:]
         
         # store speed from last step
         # this should be handled by the controls section
@@ -257,6 +259,8 @@ class Filter():
 
         # update next state
         self.ideal_states[i] = currState
+
+        # print("ideal: ", currState)
 
         return currState
 
@@ -396,7 +400,7 @@ class Filter():
         end = time.time()
         self.times[i] = end - start
 
-        print("filtered: ", self.filtered_states[i])
+        # print("filtered: ", self.filtered_states[i])
 
         # run state through our control script to get pwm signals for motors
 
@@ -404,9 +408,9 @@ class Filter():
         quaternion = np.array(self.filtered_states[i][:4])
         omega = np.array(self.filtered_states[i][4:])
         # Proportional derivative (PD) controller gains parameters (dependant upon max pwm/duty cycles)
-        kp = .4*MAX_PWM
+        kp = .05*MAX_PWM
         # .5 works, .2->.4 best so far
-        kd = .2*MAX_PWM
+        kd = .01*MAX_PWM
         # .1->.2 best so far
         
         # Find time since last pd call
@@ -424,25 +428,40 @@ class Filter():
         # update our temperature and current variables
 
         external_torque = np.array([0, 0, 0, 0])
-        next_speeds = current_to_speed(self.i, external_torque, self.curr_reaction_speeds)
 
         # convert from pwm to voltage
         voltage = (9/MAX_PWM) * self.pwms[i]
         Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
 
-        self.i = (voltage - self.i*Rw - params.Kv*self.curr_reaction_speeds)/params.Lw
-        self.Th_Ta = ((self.Th_Ta - self.Tw_Ta)/params.Rwh - self.Th_Ta/params.Rha)/params.Cha
-        self.Tw_Ta = (self.i**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
+        # find the predicted next speed of our reaction wheels based on current speed, current, and external torque
+        next_speeds = (params.Kt*self.i + external_torque - params.bm*self.reaction_speeds[i])/params.Jm
+
+        print("voltage: ", voltage)
+        print("winding resitance: ", Rw)
+
+        old_i = self.i
+        old_Th_Ta = self.Th_Ta
+        old_Tw_Ta = self.Tw_Ta
+
+        # update our current and ambient temperature difference variables
+        self.i = (voltage - old_i*Rw - params.Kv*self.reaction_speeds[i])/params.Lw
+        self.Th_Ta = ((old_Th_Ta - old_Tw_Ta)/params.Rwh - old_Th_Ta/params.Rha)/params.Cha
+        self.Tw_Ta = (old_i**2*Rw - (old_Th_Ta - old_Tw_Ta)/params.Rwh)/params.Cwa
+
+        print("current: ", self.i)
+        print("Th_Ta: ", self.Th_Ta)
+        print("Tw_Ta: ", self.Tw_Ta)
 
         # convert pwms to reaction wheel speeds and update next/last speeds
-        self.last_reaction_speeds = self.curr_reaction_speeds
-        self.curr_reaction_speeds = next_speeds
+        # self.last_reaction_speeds = self.curr_reaction_speeds
+        # self.curr_reaction_speeds = next_speeds
 
         print("next speeds: ", next_speeds)
         print("")
 
-        if i < self.n - 1:
-            self.reaction_speeds[i + 1] = next_speeds
+        # update the next reaction wheel speed with our predicted rpm
+        # if i < self.n - 1:
+            # self.reaction_speeds[i + 1] = next_speeds
 
         # J = inertia, L = tau (torque), omega = angular velocity
         #   i (current, based on voltage), Th_Ta (temp diff between housing and ambient), and Tw_Ta (winding and ambient) are states he's tracking that we don't care about
@@ -458,9 +477,6 @@ class Filter():
         # use alpha_rw or omega_w_dot (would have to impliment wheel info) to calc H_B_w_dot/L_w???
         # why do we *dt and add instead of just returning new?
         # i_trans to edit intertia of body??
-
-        # time step
-
 
         return self.filtered_states[i]
 

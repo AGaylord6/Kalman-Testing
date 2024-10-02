@@ -129,7 +129,7 @@ if __name__ == "__main__":
     # good for vn100 noises
     ukf.ukf_setQ(.00001, 10)
     # good for test 2
-    ukf.ukf_setQ(.00001, 10)
+    # ukf.ukf_setQ(.00001, 10)
 
 
     # set measurement noise
@@ -138,13 +138,13 @@ if __name__ == "__main__":
     # good for vn100 noises
     ukf.ukf_setR(.001, .01)
     # good for test 2
-    ukf.ukf_setR(.00025, .0025)
+    # ukf.ukf_setR(.00025, .0025)
 
 
     # if we aren't using real sensor data, we need to make up reaction wheel speeds, find ideal state, and generate fake data
     if ukf.ideal_known:
 
-        # ukf.generateSpeeds(1000, -1000, ukf.n/2, 100, np.array([0, 1, 0, 0]))
+        ukf.generateSpeeds(100, -100, ukf.n, 5, np.array([0, 0, 1, 0]))
 
         # set sensor noises
         # noise sd = noise density * sqrt(sampling rate)
@@ -171,11 +171,14 @@ if __name__ == "__main__":
     # set first data point
     ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
-    target = np.array([1, 0, 0, 0])
+    # should be a 90 degree turn about the top-down axis
+    target = normalize(np.array([1, 0, 0, 1]))
 
     for i in range(1, ukf.n):
 
         # get ideal next state based on current state and reaction wheel speeds of this step
+        # NOTE: this "ideal" state is not super based on truth because it is not generated beforehand. 
+        #       it basically follows what our filter does, so it is not a good representation of the truth
         ideal = ukf.propagate_step(i)
         # game_visualize(np.array([ukf.propagate_step(i)]), i-1)
         
@@ -187,26 +190,28 @@ if __name__ == "__main__":
         # also run through our controls to get pwm => voltage => current => speed of reaction wheels
         # ukf.filtered_states[i] = ukf.ideal_states[i]
         filtered = ukf.simulate_step(i, params, target)
-        game_visualize(np.array([filtered]), i-1)
+        # game_visualize(np.array([filtered]), i-1)
 
-
+    # print(ukf.reaction_speeds[:10])
 
     # TODO: impliment PySol and print B field 
 
-    # ukf.plotData()
+    plot_xyz(ukf.pwms, "PWMs", fileName="PWM.png")
+
+    ukf.plotData()
     # plots filtered states (and ideal states if ideal_known = True)
-    # ukf.plotStates()
+    ukf.plotStates()
 
     # sum = ukf.runTests()
 
     # 0 = only create pdf output, 1 = show 3D animation visualization
-    visualize = 1
+    visualize = 0
 
     if visualize == 1:
         # ukf.visualizeResults(ukf.ideal_states)
-        # ukf.visualizeResults(ukf.filtered_states)
-        pass
-    else:
+        ukf.visualizeResults(ukf.filtered_states)
+
+    elif visualize == 0:
 
         outputFile = "output.pdf"
 
