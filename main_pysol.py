@@ -144,7 +144,7 @@ if __name__ == "__main__":
     # if we aren't using real sensor data, we need to make up reaction wheel speeds, find ideal state, and generate fake data
     if ukf.ideal_known:
 
-        ukf.generateSpeeds(1000, -1000, ukf.n/2, 100, np.array([0, 1, 0, 0]))
+        # ukf.generateSpeeds(1000, -1000, ukf.n/2, 100, np.array([0, 1, 0, 0]))
 
         # set sensor noises
         # noise sd = noise density * sqrt(sampling rate)
@@ -171,11 +171,13 @@ if __name__ == "__main__":
     # set first data point
     ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
+    target = np.array([1, 0, 0, 0])
+
     for i in range(1, ukf.n):
 
         # get ideal next state based on current state and reaction wheel speeds of this step
-        ukf.propagate_step(i)
-        # game_visualize(np.array([ukf.propagate_step(i)]), i)
+        ideal = ukf.propagate_step(i)
+        # game_visualize(np.array([ukf.propagate_step(i)]), i-1)
         
         # create mag data using transform and orbit data
         # create gyro data by adding noise to ideal
@@ -183,7 +185,10 @@ if __name__ == "__main__":
 
         # filter our data and get next state
         # also run through our controls to get pwm => voltage => current => speed of reaction wheels
-        ukf.filtered_states[i] = ukf.ideal_states[i]
+        # ukf.filtered_states[i] = ukf.ideal_states[i]
+        filtered = ukf.simulate_step(i, params, target)
+        game_visualize(np.array([filtered]), i-1)
+
 
 
     # TODO: impliment PySol and print B field 

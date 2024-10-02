@@ -18,6 +18,7 @@ from graphing import *
 from tests import *
 from saving import *
 from main_pysol import current_to_speed, params
+from irishsat_ukf.adc_pd_controller_numpy import *
 
 
 class Filter():
@@ -84,6 +85,13 @@ class Filter():
         # kalman filtered states for all n steps
         self.filtered_states = np.zeros((n, dim))
         self.filtered_states[0] = self.state
+
+        # pwm values (motor signals) for all n steps
+        self.pwms = np.zeros((n, 4))
+        self.pwms[0] = np.array([0, 0, 0, 0])
+
+        self.curr_time_pwm = time.time()
+        self.end_time_pwm = 0
 
         # covariance of system for all n steps
         self.covs = np.zeros((n, dim, dim))
@@ -373,17 +381,53 @@ class Filter():
         return states
     
 
-    def simulate_step(self, params, target):
+    def simulate_step(self, i, params, target):
 
-        # run last state, reaction wheel speed, and data through filter
+        start = time.time()
+        
+        # run last state, reaction wheel speed, and data through filter to get a more accurate state estimate
+        self.filtered_states[i], self.covs[i], self.innovations[i], self.innovationCovs[i] = self.kalmanMethod(
+                self.filtered_states[i-1], self.covs[i-1],         # last state and covariance
+                self.Q, self.R,                                    # process and measurement noise
+                self.B_true[i],                                    # true magnetic field at this timestep
+                self.reaction_speeds[i], self.reaction_speeds[i-1],# current and last reaction wheel speeds
+                self.data[i])                                      # data reading at this timestep (already generated/filled)
 
-        # run state through our controls to get pwms
+        end = time.time()
+        self.times[i] = end - start
+
+        print("filtered: ", self.filtered_states[i])
+
+        # run state through our control script to get pwm signals for motors
+
+        # Get current quaternion and angular velocity of cubesat
+        quaternion = np.array(self.filtered_states[i][:4])
+        omega = np.array(self.filtered_states[i][4:])
+        # Proportional derivative (PD) controller gains parameters (dependant upon max pwm/duty cycles)
+        kp = .4*MAX_PWM
+        # .5 works, .2->.4 best so far
+        kd = .2*MAX_PWM
+        # .1->.2 best so far
+        
+        # Find time since last pd call
+        self.end_time_pwm = time.time()
+        # this acts as our timestep for the PD controller
+        pwm_total_time = self.end_time_pwm - self.curr_time_pwm
+
+        # Run PD controller to generate output for reaction wheels based on target orientation
+        self.pwms[i] = pd_controller(quaternion, target, omega, kp, kd, self.pwms[i-1], pwm_total_time)
+
+        self.curr_time_pwm = time.time()
+
+        print("PWM: ", self.pwms[i])
 
         # update our temperature and current variables
 
         external_torque = np.array([0, 0, 0, 0])
+        next_speeds = current_to_speed(self.i, external_torque, self.curr_reaction_speeds)
+
         # convert from pwm to voltage
-        voltage = (9/65535) * self.pwm 
+        voltage = (9/MAX_PWM) * self.pwms[i]
         Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
 
         self.i = (voltage - self.i*Rw - params.Kv*self.curr_reaction_speeds)/params.Lw
@@ -391,7 +435,15 @@ class Filter():
         self.Tw_Ta = (self.i**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
 
         # convert pwms to reaction wheel speeds and update next/last speeds
-        next_speeds = current_to_speed(self.i, external_torque, self.curr_reaction_speeds)
+        self.last_reaction_speeds = self.curr_reaction_speeds
+        self.curr_reaction_speeds = next_speeds
+
+        print("next speeds: ", next_speeds)
+        print("")
+
+        if i < self.n - 1:
+            self.reaction_speeds[i + 1] = next_speeds
+
         # J = inertia, L = tau (torque), omega = angular velocity
         #   i (current, based on voltage), Th_Ta (temp diff between housing and ambient), and Tw_Ta (winding and ambient) are states he's tracking that we don't care about
         #   l_w is torque produced by pwm
@@ -410,7 +462,7 @@ class Filter():
         # time step
 
 
-        return 0
+        return self.filtered_states[i]
 
 
     def plotData(self):
