@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     # create unscented kalman filter object
     # Our North West Up true magnetic field in stenson remick should be: 19.42900375, 1.74830615, 49.13746833 [micro Teslas]
-    ukf = Filter(200,                       # number of steps to simulate
+    ukf = Filter(800,                       # number of steps to simulate
                  0.02,                       # timestep
                  7, 6,                      # state space dimension, measurement space dimension
                  0, 0,                      # measurement noise, process noise (overwritten later)
@@ -198,6 +198,8 @@ if __name__ == "__main__":
     plot_xyz(ukf.reaction_speeds, "Reaction Wheel Speeds", fileName="ReactionSpeeds.png")
 
     plot_xyz(ukf.pwms, "PWMs", fileName="PWM.png")
+
+    # TODO: graph current
 
     ukf.plotData()
     # plots filtered states (and ideal states if ideal_known = True)

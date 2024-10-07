@@ -409,8 +409,12 @@ class Filter():
         omega = np.array(self.filtered_states[i][4:])
         # Proportional derivative (PD) controller gains parameters (dependant upon max pwm/duty cycles)
         kp = .05*MAX_PWM
+        kp = .025*MAX_PWM
+        kp = .01*MAX_PWM
         # .5 works, .2->.4 best so far
         kd = .01*MAX_PWM
+        kd = .005*MAX_PWM
+        kd = .001*MAX_PWM
         # .1->.2 best so far
         
         # Find time since last pd call
@@ -423,9 +427,10 @@ class Filter():
 
         self.curr_time_pwm = time.time()
 
-        print("PWM: ", self.pwms[i])
+        # print("PWM: ", self.pwms[i])
 
         # update our temperature and current variables
+        # TODO: find and enforce limits for current and temp (that match with max pwm)
 
         # external torque is 0 for now
         external_torque = np.array([0, 0, 0, 0])
@@ -438,15 +443,15 @@ class Filter():
         Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
 
         # update our current and ambient temperature difference variables
-        current_dot = (voltage - self.current*Rw - params.Kv*self.reaction_speeds[i])/params.Lw * .01
+        current_dot = (voltage - self.current*Rw - params.Kv*self.reaction_speeds[i])/params.Lw * .015
         # g = (Vin[0]-i*Rw - params.Kv*smo_omega_w0)
 
         Th_Ta_dot = ((self.Th_Ta - self.Tw_Ta)/params.Rwh - self.Th_Ta/params.Rha)/params.Cha
 
         Tw_ta_dot = (self.current**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
 
-        print("current_dot: ", current_dot)
-        print("speed_dot: ", omega_w_dot)
+        # print("current_dot: ", current_dot)
+        # print("speed_dot: ", omega_w_dot)
 
         # update our variables with Euler's method of propagation
         self.current += current_dot * self.dt
@@ -454,12 +459,10 @@ class Filter():
         self.Tw_Ta += Tw_ta_dot * self.dt
         next_speeds = self.reaction_speeds[i] + omega_w_dot * self.dt
 
-        print("current: ", self.current)
-        # print("Th_Ta: ", self.Th_Ta)
-        # print("Tw_Ta: ", self.Tw_Ta)
+        # print("current: ", self.current)
 
-        print("next speeds: ", next_speeds)
-        print("")
+        # print("next speeds: ", next_speeds)
+        # print("")
 
         # update the next reaction wheel speed with our predicted rpm
         if i < self.n - 1:
