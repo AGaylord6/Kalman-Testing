@@ -172,7 +172,7 @@ if __name__ == "__main__":
     ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
     # should be a 90 degree turn about the top-down axis
-    target = normalize(np.array([0, 0, 1, 0]))
+    target = normalize(np.array([1, 0, 1, 0]))
 
     for i in range(1, ukf.n):
 
@@ -195,17 +195,18 @@ if __name__ == "__main__":
     # print(ukf.reaction_speeds[:10])
 
     # TODO: impliment PySol and print B field 
+    plot_xyz(ukf.reaction_speeds, "Reaction Wheel Speeds", fileName="ReactionSpeeds.png")
 
-    # plot_xyz(ukf.pwms, "PWMs", fileName="PWM.png")
+    plot_xyz(ukf.pwms, "PWMs", fileName="PWM.png")
 
-    # ukf.plotData()
+    ukf.plotData()
     # plots filtered states (and ideal states if ideal_known = True)
-    # ukf.plotStates()
+    ukf.plotStates()
 
     # sum = ukf.runTests()
 
     # 0 = only create pdf output, 1 = show 3D animation visualization
-    visualize = 2
+    visualize = 0
 
     if visualize == 1:
         # ukf.visualizeResults(ukf.ideal_states)

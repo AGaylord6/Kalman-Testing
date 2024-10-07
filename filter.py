@@ -392,7 +392,7 @@ class Filter():
         # run last state, reaction wheel speed, and data through filter to get a more accurate state estimate
         self.filtered_states[i], self.covs[i], self.innovations[i], self.innovationCovs[i] = self.kalmanMethod(
                 self.filtered_states[i-1], self.covs[i-1],         # last state and covariance
-                self.Q, self.R, self.dt                            # process and measurement noise, dt
+                self.Q, self.R, self.dt,                           # process and measurement noise, dt
                 self.B_true[i],                                    # true magnetic field at this timestep
                 self.reaction_speeds[i], self.reaction_speeds[i-1],# current and last reaction wheel speeds
                 self.data[i])                                      # data reading at this timestep (already generated/filled)
@@ -427,49 +427,36 @@ class Filter():
 
         # update our temperature and current variables
 
+        # external torque is 0 for now
         external_torque = np.array([0, 0, 0, 0])
 
         # find the predicted next speed of our reaction wheels based on current speed, current, and external torque
-        # next_speeds = (params.Kt*self.current + external_torque - params.bm*self.reaction_speeds[i])/params.Jm
-        next_speeds = (params.Kt*self.current + external_torque - params.bm*self.reaction_speeds[i])
-
-        next_speeds = self.reaction_speeds[i] + next_speeds * self.dt
+        omega_w_dot = (params.Kt*self.current + external_torque - params.bm*self.reaction_speeds[i])/params.Jm
 
         # convert from pwm to voltage
         voltage = (9/MAX_PWM) * self.pwms[i]
         Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
-        # Rw = params.Rwa
-
-        print("voltage: ", voltage)
-        # print("winding resitance: ", Rw)
 
         # update our current and ambient temperature difference variables
-        # self.current = (voltage - old_current*Rw - params.Kv*self.reaction_speeds[i])/params.Lw
-        current_dot = (voltage - self.current*Rw - params.Kv*self.reaction_speeds[i])/params.Lw
+        current_dot = (voltage - self.current*Rw - params.Kv*self.reaction_speeds[i])/params.Lw * .01
         # g = (Vin[0]-i*Rw - params.Kv*smo_omega_w0)
 
-        # self.Th_Ta = ((old_Th_Ta - old_Tw_Ta)/params.Rwh - old_Th_Ta/params.Rha)/params.Cha
         Th_Ta_dot = ((self.Th_Ta - self.Tw_Ta)/params.Rwh - self.Th_Ta/params.Rha)/params.Cha
 
-        # self.Tw_Ta = (old_current**2*Rw - (old_Th_Ta - old_Tw_Ta)/params.Rwh)/params.Cwa
         Tw_ta_dot = (self.current**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
 
+        print("current_dot: ", current_dot)
+        print("speed_dot: ", omega_w_dot)
+
+        # update our variables with Euler's method of propagation
         self.current += current_dot * self.dt
         self.Th_Ta += Th_Ta_dot * self.dt
         self.Tw_Ta += Tw_ta_dot * self.dt
+        next_speeds = self.reaction_speeds[i] + omega_w_dot * self.dt
+
         print("current: ", self.current)
         # print("Th_Ta: ", self.Th_Ta)
         # print("Tw_Ta: ", self.Tw_Ta)
-
-# wheel:  [24844.83022526 24844.83022526     0.             0.        ]
-# voltage:  [6. 6. 0. 0.]
-# current:  [-62.31760047 -62.31760047   0.        0.        ]
-# Th_Ta:  [-0.00130267 -0.00130267  0.          0.        ]
-# Tw_Ta:  [8.87346483 8.87346483 0.         0.        ]
-
-        # convert pwms to reaction wheel speeds and update next/last speeds
-        # self.last_reaction_speeds = self.curr_reaction_speeds
-        # self.curr_reaction_speeds = next_speeds
 
         print("next speeds: ", next_speeds)
         print("")
@@ -477,6 +464,18 @@ class Filter():
         # update the next reaction wheel speed with our predicted rpm
         if i < self.n - 1:
             self.reaction_speeds[i + 1] = next_speeds
+
+
+        # https://www.reddit.com/r/scipy/comments/djb3pf/running_code_between_timesteps_using_scipys_solve/
+        # odient function??
+
+# old current:  [0.83418335 0.83418335 0.         0.        ]
+# old wheel:  [346.76277161 346.76277161   0.           0.        ]    
+# new wheel:  [11971.92853007 11971.92853007     0.             0.        ]
+# voltage:  [6. 6. 0. 0.]
+# current:  [-30.02982735 -30.02982735   0.           0.        ]      
+# Th_Ta:  [-0.00421126 -0.00421126  0.          0.        ]
+# Tw_Ta:  [2.88542648 2.88542648 0.         0.        ]
 
         # J = inertia, L = tau (torque), omega = angular velocity
         #   i (current, based on voltage), Th_Ta (temp diff between housing and ambient), and Tw_Ta (winding and ambient) are states he's tracking that we don't care about
