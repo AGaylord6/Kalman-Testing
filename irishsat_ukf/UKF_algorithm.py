@@ -195,7 +195,7 @@ def quaternionMultiply(a, b):
             [a[0] * b[3] + a[1] * b[2] - a[2] * b[1] + a[3] * b[0]]]
 
 
-def generatePredMeans(eomsClass, sigmaPoints, w0, w1, reaction_speeds, old_reaction_speeds, n):
+def generatePredMeans(eomsClass, sigmaPoints, w0, w1, dt, reaction_speeds, old_reaction_speeds, n):
     '''
     generatePredMeans
         generate mean (eq 9) after passing sigma point distribution through a transformation function (eq 8)
@@ -216,8 +216,6 @@ def generatePredMeans(eomsClass, sigmaPoints, w0, w1, reaction_speeds, old_react
     means = np.zeros(n)
     transformedSigma = np.zeros((2 * n + 1, n))
 
-    # CHANGE TO PASS TO FUNCITON THROUGHOUT??
-    dt = 0.1
     # calculate angular acceleration using old and current reaction wheel speeds
     alpha = (reaction_speeds - old_reaction_speeds) / dt
 
@@ -380,7 +378,7 @@ def generateCrossCov(predMeans, mesMeans, f, h, w0, w1, n):
     return crossCov
 
 
-def UKF(means, cov, q, r, gps_data, reaction_speeds, old_reaction_speeds, data):
+def UKF(means, cov, q, r, dt, gps_data, reaction_speeds, old_reaction_speeds, data):
     '''
     UKF
         estimates state at time step based on sensor data, noise, and equations of motion
@@ -439,7 +437,7 @@ def UKF(means, cov, q, r, gps_data, reaction_speeds, old_reaction_speeds, data):
     EOMS = TEST1EOMS(I_body, I_spin, I_trans)
     
     # eq 8-9: pass sigma points through EOMs (f) and generate mean in state space
-    predMeans, f = generatePredMeans(EOMS, sigmaPoints, w0_m, w1, reaction_speeds, old_reaction_speeds, n)
+    predMeans, f = generatePredMeans(EOMS, sigmaPoints, w0_m, w1, dt, reaction_speeds, old_reaction_speeds, n)
     
     # print("PREDICTED MEANS: ", predMeans)
     

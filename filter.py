@@ -372,7 +372,7 @@ class Filter():
             
             start = time.time()
             # propagate current state through kalman filter and store estimated state and innovation
-            self.state, self.cov, self.innovations[i], self.innovationCovs[i] = self.kalmanMethod(self.state, self.cov, self.Q, self.R, self.B_true[i], self.curr_reaction_speeds, self.old_reaction_speeds, self.data[i])
+            self.state, self.cov, self.innovations[i], self.innovationCovs[i] = self.kalmanMethod(self.state, self.cov, self.Q, self.R, self.dt, self.B_true[i], self.curr_reaction_speeds, self.old_reaction_speeds, self.data[i])
             end = time.time()
 
             # store time taken for each step
@@ -392,7 +392,7 @@ class Filter():
         # run last state, reaction wheel speed, and data through filter to get a more accurate state estimate
         self.filtered_states[i], self.covs[i], self.innovations[i], self.innovationCovs[i] = self.kalmanMethod(
                 self.filtered_states[i-1], self.covs[i-1],         # last state and covariance
-                self.Q, self.R,                                    # process and measurement noise
+                self.Q, self.R, self.dt                            # process and measurement noise, dt
                 self.B_true[i],                                    # true magnetic field at this timestep
                 self.reaction_speeds[i], self.reaction_speeds[i-1],# current and last reaction wheel speeds
                 self.data[i])                                      # data reading at this timestep (already generated/filled)
