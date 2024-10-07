@@ -51,9 +51,9 @@ class Filter():
         self.B_true = np.full((n, 3), B_true)
 
         # Motor states
-        self.i = np.array([0, 0, 0, 0]) # Current to each motor
-        self.Th_Ta = np.array([0, 0, 0, 0]) # diff in temp between housing and ambient
-        self.Tw_Ta = np.array([0, 0, 0, 0]) # diff in temp between winding and ambient
+        self.current = np.array([0.0, 0.0, 0.0, 0.0]) # Current to each motor
+        self.Th_Ta = np.array([0.0, 0.0, 0.0, 0.0]) # diff in temp between housing and ambient
+        self.Tw_Ta = np.array([0.0, 0.0, 0.0, 0.0]) # diff in temp between winding and ambient
 
         # 1x4 array of current reaction wheel speeds
         self.curr_reaction_speeds = reaction_speeds
@@ -429,28 +429,43 @@ class Filter():
 
         external_torque = np.array([0, 0, 0, 0])
 
+        # find the predicted next speed of our reaction wheels based on current speed, current, and external torque
+        # next_speeds = (params.Kt*self.current + external_torque - params.bm*self.reaction_speeds[i])/params.Jm
+        next_speeds = (params.Kt*self.current + external_torque - params.bm*self.reaction_speeds[i])
+
+        next_speeds = self.reaction_speeds[i] + next_speeds * self.dt
+
         # convert from pwm to voltage
         voltage = (9/MAX_PWM) * self.pwms[i]
         Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
-
-        # find the predicted next speed of our reaction wheels based on current speed, current, and external torque
-        next_speeds = (params.Kt*self.i + external_torque - params.bm*self.reaction_speeds[i])/params.Jm
+        # Rw = params.Rwa
 
         print("voltage: ", voltage)
-        print("winding resitance: ", Rw)
-
-        old_i = self.i
-        old_Th_Ta = self.Th_Ta
-        old_Tw_Ta = self.Tw_Ta
+        # print("winding resitance: ", Rw)
 
         # update our current and ambient temperature difference variables
-        self.i = (voltage - old_i*Rw - params.Kv*self.reaction_speeds[i])/params.Lw
-        self.Th_Ta = ((old_Th_Ta - old_Tw_Ta)/params.Rwh - old_Th_Ta/params.Rha)/params.Cha
-        self.Tw_Ta = (old_i**2*Rw - (old_Th_Ta - old_Tw_Ta)/params.Rwh)/params.Cwa
+        # self.current = (voltage - old_current*Rw - params.Kv*self.reaction_speeds[i])/params.Lw
+        current_dot = (voltage - self.current*Rw - params.Kv*self.reaction_speeds[i])/params.Lw
+        # g = (Vin[0]-i*Rw - params.Kv*smo_omega_w0)
 
-        print("current: ", self.i)
-        print("Th_Ta: ", self.Th_Ta)
-        print("Tw_Ta: ", self.Tw_Ta)
+        # self.Th_Ta = ((old_Th_Ta - old_Tw_Ta)/params.Rwh - old_Th_Ta/params.Rha)/params.Cha
+        Th_Ta_dot = ((self.Th_Ta - self.Tw_Ta)/params.Rwh - self.Th_Ta/params.Rha)/params.Cha
+
+        # self.Tw_Ta = (old_current**2*Rw - (old_Th_Ta - old_Tw_Ta)/params.Rwh)/params.Cwa
+        Tw_ta_dot = (self.current**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
+
+        self.current += current_dot * self.dt
+        self.Th_Ta += Th_Ta_dot * self.dt
+        self.Tw_Ta += Tw_ta_dot * self.dt
+        print("current: ", self.current)
+        # print("Th_Ta: ", self.Th_Ta)
+        # print("Tw_Ta: ", self.Tw_Ta)
+
+# wheel:  [24844.83022526 24844.83022526     0.             0.        ]
+# voltage:  [6. 6. 0. 0.]
+# current:  [-62.31760047 -62.31760047   0.        0.        ]
+# Th_Ta:  [-0.00130267 -0.00130267  0.          0.        ]
+# Tw_Ta:  [8.87346483 8.87346483 0.         0.        ]
 
         # convert pwms to reaction wheel speeds and update next/last speeds
         # self.last_reaction_speeds = self.curr_reaction_speeds
@@ -460,8 +475,8 @@ class Filter():
         print("")
 
         # update the next reaction wheel speed with our predicted rpm
-        # if i < self.n - 1:
-            # self.reaction_speeds[i + 1] = next_speeds
+        if i < self.n - 1:
+            self.reaction_speeds[i + 1] = next_speeds
 
         # J = inertia, L = tau (torque), omega = angular velocity
         #   i (current, based on voltage), Th_Ta (temp diff between housing and ambient), and Tw_Ta (winding and ambient) are states he's tracking that we don't care about
