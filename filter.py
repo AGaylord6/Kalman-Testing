@@ -413,15 +413,15 @@ class Filter():
         # Proportional derivative (PD) controller gains parameters (dependant upon max pwm/duty cycles)
         # kp = .5*MAX_PWM
         # kp = .05*MAX_PWM
-        kp = .04*MAX_PWM
+        # kp = .04*MAX_PWM
         # kp = .03*MAX_PWM
         # kp = .025*MAX_PWM
-        # kp = .01*MAX_PWM
+        kp = .01*MAX_PWM
         # kp = .005*MAX_PWM
         # .5 works, .2->.4 best so far
-        # kd = .1*MAX_PWM
+        kd = .05*MAX_PWM
         # kd = .01*MAX_PWM
-        kd = .008*MAX_PWM
+        # kd = .008*MAX_PWM
         # kd = .006*MAX_PWM
         # kd = .005*MAX_PWM
         # kd = .002*MAX_PWM

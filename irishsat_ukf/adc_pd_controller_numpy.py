@@ -114,7 +114,7 @@ def pd_controller(state,target, omega, kp, kd, old_pwm, dt):
     # Ensure pwm is always within limits of RPMs
     np.putmask(pwm, pwm > 0.5*MAX_PWM, 0.5*MAX_PWM)
     np.putmask(pwm, pwm < 0.5*-MAX_PWM, 0.5*-MAX_PWM)
-
+    pwm = np.array([1000,0,0,0])
     return pwm
 
 if __name__ == "__main__":
