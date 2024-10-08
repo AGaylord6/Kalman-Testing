@@ -431,6 +431,7 @@ def UKF(means, cov, q, r, dt, gps_data, reaction_speeds, old_reaction_speeds, da
                             [536.12, -710.058, 23138.181]])
     # TODO: try 1e-7
     I_spin = 5.1e-7
+    # I_spin = 1e-7
     # used to edit our body's moment of inertia tensor somehow (0 for none)
     I_trans = 0
     # intialize 1D EOMs using intertia measurements of cubeSat

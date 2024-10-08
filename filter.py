@@ -71,8 +71,8 @@ class Filter():
 
         # get moment of inertia of body of satellite
         I_body = params.J_B
-        # I_spin = 5.1e-7
-        I_spin = 1e-7
+        I_spin = 5.1e-7
+        # I_spin = 1e-7
         I_trans = 0
         # intialize EOMs using intertia measurements of cubeSat
         self.EOMS = TEST1EOMS(I_body, I_spin, I_trans)
@@ -411,26 +411,34 @@ class Filter():
         quaternion = np.array(self.filtered_states[i][:4])
         omega = np.array(self.filtered_states[i][4:])
         # Proportional derivative (PD) controller gains parameters (dependant upon max pwm/duty cycles)
-        kp = .05*MAX_PWM
-        kp = .025*MAX_PWM
-        kp = .01*MAX_PWM
+        # kp = .5*MAX_PWM
+        # kp = .05*MAX_PWM
+        kp = .04*MAX_PWM
+        # kp = .03*MAX_PWM
+        # kp = .025*MAX_PWM
+        # kp = .01*MAX_PWM
         # kp = .005*MAX_PWM
         # .5 works, .2->.4 best so far
-        kd = .01*MAX_PWM
-        kd = .005*MAX_PWM
-        kd = .002*MAX_PWM
+        # kd = .1*MAX_PWM
+        # kd = .01*MAX_PWM
+        kd = .008*MAX_PWM
+        # kd = .006*MAX_PWM
+        # kd = .005*MAX_PWM
+        # kd = .002*MAX_PWM
         # kd = .001*MAX_PWM
         # .1->.2 best so far
         
         # Find time since last pd call
-        self.end_time_pwm = time.time()
+        # self.end_time_pwm = time.time()
         # this acts as our timestep for the PD controller
-        pwm_total_time = self.end_time_pwm - self.curr_time_pwm
+        # pwm_total_time = self.end_time_pwm - self.curr_time_pwm
+        # pwm_total_time = .1
+        pwm_total_time = self.dt
 
         # Run PD controller to generate output for reaction wheels based on target orientation
         self.pwms[i] = pd_controller(quaternion, target, omega, kp, kd, self.pwms[i-1], pwm_total_time)
 
-        self.curr_time_pwm = time.time()
+        # self.curr_time_pwm = time.time()
 
         # print("PWM: ", self.pwms[i])
 

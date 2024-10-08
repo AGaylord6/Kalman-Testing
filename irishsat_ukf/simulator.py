@@ -257,7 +257,7 @@ def game_visualize(states, a):
 
     # Draw the states iteratively in PyGame
     while True:
-        clock.tick_busy_loop(75)
+        clock.tick_busy_loop(55)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()

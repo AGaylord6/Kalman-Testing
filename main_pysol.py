@@ -108,10 +108,14 @@ if __name__ == "__main__":
     # set up signal handler to shut down pyplot tabs
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
 
+    tf = 16
+    dt = .02
+    n = int(tf/dt)
+
     # create unscented kalman filter object
     # Our North West Up true magnetic field in stenson remick should be: 19.42900375, 1.74830615, 49.13746833 [micro Teslas]
-    ukf = Filter(800,                       # number of steps to simulate
-                 0.02,                       # timestep
+    ukf = Filter(n,                         # number of steps to simulate
+                 dt,                        # timestep
                  7, 6,                      # state space dimension, measurement space dimension
                  0, 0,                      # measurement noise, process noise (overwritten later)
                  np.array([19, 1.7, 49]),   # true magnetic field
@@ -193,13 +197,14 @@ if __name__ == "__main__":
         # ukf.filtered_states[i] = ukf.ideal_states[i]
         filtered = ukf.simulate_step(i, params, target)
         # game_visualize(np.array([filtered]), i-1)
-        time.sleep(.01)
-        # TIME SINCE LAST ONE AFFECTS CONTROLLER DUHHHH
-        # longer time = faster controls
+
+        # TIME SINCE LAST ONE ITERATION AFFECTS CONTROLLER DUHHHH
+        # longer time = larger pwm steps = faster controls
 
     # print(ukf.reaction_speeds[:10])
 
     # TODO: impliment PySol and print B field 
+    # TODO: print total time in seconds, control gains, and other important info
     plot_xyz(ukf.reaction_speeds, "Reaction Wheel Speeds", fileName="ReactionSpeeds.png")
 
     plot_xyz(ukf.pwms, "PWMs", fileName="PWM.png")
