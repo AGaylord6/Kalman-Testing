@@ -28,6 +28,8 @@ import signal
 
 
 class params:
+    MAX_CURRENT = 1.5
+    MIN_CURRENT = -MAX_CURRENT
     # Importing motor parameters - Maxon DCX 8 M (9 volts)
     Rwa = 3.54      # Ohms, winding resistance at ambient temperature
     Lw = 0.424e-3  # Henry
@@ -161,7 +163,7 @@ if __name__ == "__main__":
         gyroNoises = np.random.normal(0, gyroSD, (ukf.n, 3))
 
         # generate data reading for each step 
-        ukf.generateData(magNoises, gyroNoises, 0)
+        # ukf.generateData(magNoises, gyroNoises, 0)
     
     else:
         # load sensor data from file
@@ -172,7 +174,7 @@ if __name__ == "__main__":
     ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
     # should be a 90 degree turn about the top-down axis
-    target = normalize(np.array([1, 0, 1, 0]))
+    target = normalize(np.array([1.0, 0.0, -1.0, 0.0]))
 
     for i in range(1, ukf.n):
 
@@ -190,7 +192,10 @@ if __name__ == "__main__":
         # also run through our controls to get pwm => voltage => current => speed of reaction wheels
         # ukf.filtered_states[i] = ukf.ideal_states[i]
         filtered = ukf.simulate_step(i, params, target)
-        game_visualize(np.array([filtered]), i-1)
+        # game_visualize(np.array([filtered]), i-1)
+        time.sleep(.01)
+        # TIME SINCE LAST ONE AFFECTS CONTROLLER DUHHHH
+        # longer time = faster controls
 
     # print(ukf.reaction_speeds[:10])
 
@@ -199,7 +204,7 @@ if __name__ == "__main__":
 
     plot_xyz(ukf.pwms, "PWMs", fileName="PWM.png")
 
-    # TODO: graph current
+    plot_multiple_lines([ukf.currents], ["Motor Current"], "Motor Current", fileName="Current.png")
 
     ukf.plotData()
     # plots filtered states (and ideal states if ideal_known = True)
@@ -207,8 +212,8 @@ if __name__ == "__main__":
 
     # sum = ukf.runTests()
 
-    # 0 = only create pdf output, 1 = show 3D animation visualization
-    visualize = 0
+    # 0 = only create pdf output, 1 = show 3D animation visualization, 2 = both, 3 = none
+    visualize = 2
 
     if visualize == 1:
         # ukf.visualizeResults(ukf.ideal_states)
@@ -219,7 +224,15 @@ if __name__ == "__main__":
         outputFile = "output.pdf"
 
         ukf.saveFile(outputFile, sum)
-    
+
+    elif visualize == 2:
+
+        outputFile = "output.pdf"
+
+        ukf.saveFile(outputFile, sum)
+
+        ukf.visualizeResults(ukf.filtered_states)
+
     # only show plot at end so they all show up
     plt.show()
 

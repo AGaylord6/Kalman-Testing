@@ -54,6 +54,9 @@ class Filter():
         self.current = np.array([0.0, 0.0, 0.0, 0.0]) # Current to each motor
         self.Th_Ta = np.array([0.0, 0.0, 0.0, 0.0]) # diff in temp between housing and ambient
         self.Tw_Ta = np.array([0.0, 0.0, 0.0, 0.0]) # diff in temp between winding and ambient
+        # current for all n steps
+        self.currents = np.zeros((n, 4))
+        self.currents[0] = self.current
 
         # 1x4 array of current reaction wheel speeds
         self.curr_reaction_speeds = reaction_speeds
@@ -411,10 +414,12 @@ class Filter():
         kp = .05*MAX_PWM
         kp = .025*MAX_PWM
         kp = .01*MAX_PWM
+        # kp = .005*MAX_PWM
         # .5 works, .2->.4 best so far
         kd = .01*MAX_PWM
         kd = .005*MAX_PWM
-        kd = .001*MAX_PWM
+        kd = .002*MAX_PWM
+        # kd = .001*MAX_PWM
         # .1->.2 best so far
         
         # Find time since last pd call
@@ -433,28 +438,31 @@ class Filter():
         # TODO: find and enforce limits for current and temp (that match with max pwm)
 
         # external torque is 0 for now
-        external_torque = np.array([0, 0, 0, 0])
+        external_torque = np.array([0.0, 0.0, 0.0, 0.0])
 
         # find the predicted next speed of our reaction wheels based on current speed, current, and external torque
-        omega_w_dot = (params.Kt*self.current + external_torque - params.bm*self.reaction_speeds[i])/params.Jm
+        omega_w_dot = (params.Kt*self.currents[i-1] + external_torque - params.bm*self.reaction_speeds[i])/params.Jm
 
         # convert from pwm to voltage
         voltage = (9/MAX_PWM) * self.pwms[i]
         Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
 
         # update our current and ambient temperature difference variables
-        current_dot = (voltage - self.current*Rw - params.Kv*self.reaction_speeds[i])/params.Lw * .015
+        magic = .021
+        current_dot = (voltage - self.currents[i-1]*Rw - params.Kv*self.reaction_speeds[i])/params.Lw * magic
+        # current_dot = (voltage - self.currents[i-1]*Rw - params.Kv*self.reaction_speeds[i])/params.Lw
         # g = (Vin[0]-i*Rw - params.Kv*smo_omega_w0)
 
         Th_Ta_dot = ((self.Th_Ta - self.Tw_Ta)/params.Rwh - self.Th_Ta/params.Rha)/params.Cha
 
-        Tw_ta_dot = (self.current**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
+        Tw_ta_dot = (self.currents[i-1]**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
 
         # print("current_dot: ", current_dot)
         # print("speed_dot: ", omega_w_dot)
 
         # update our variables with Euler's method of propagation
-        self.current += current_dot * self.dt
+        self.currents[i] = self.currents[i-1] + current_dot * self.dt
+        self.currents[i] = [max(min(x, params.MAX_CURRENT), params.MIN_CURRENT) for x in self.currents[i]]
         self.Th_Ta += Th_Ta_dot * self.dt
         self.Tw_Ta += Tw_ta_dot * self.dt
         next_speeds = self.reaction_speeds[i] + omega_w_dot * self.dt

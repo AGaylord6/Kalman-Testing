@@ -109,6 +109,18 @@ def savePDF(outputFile, pngDir, filter, sum):
 
     pdf.add_page()
 
+    pdfHeader(pdf, "Reaction wheel speeds")
+
+    pdf.image(os.path.join(pngDirectory, "ReactionSpeeds.png"), x = 10, y = pdf.get_y(), w = 180)
+
+    pdf.add_page()
+
+    pdfHeader(pdf, "Motor Current")
+
+    pdf.image(os.path.join(pngDirectory, "current.png"), x = 10, y = pdf.get_y(), w = 180)
+
+    pdf.add_page()
+
     pdfHeader(pdf, "Tests")
 
     testText = f"""We have two metrics for examining our filter: statistical and speed tests. 
