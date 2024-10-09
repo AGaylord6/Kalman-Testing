@@ -403,42 +403,34 @@ class Filter():
         end = time.time()
         self.times[i] = end - start
 
-        # print("filtered: ", self.filtered_states[i])
-
         # run state through our control script to get pwm signals for motors
 
         # Get current quaternion and angular velocity of cubesat
         quaternion = np.array(self.filtered_states[i][:4])
         omega = np.array(self.filtered_states[i][4:])
         # Proportional derivative (PD) controller gains parameters (dependant upon max pwm/duty cycles)
-        # kp = .5*MAX_PWM
+        kp = .05*MAX_PWM
         # kp = .05*MAX_PWM
         # kp = .04*MAX_PWM
         # kp = .03*MAX_PWM
         # kp = .025*MAX_PWM
-        kp = .01*MAX_PWM
+        # kp = .01*MAX_PWM
         # kp = .005*MAX_PWM
-        # .5 works, .2->.4 best so far
-        kd = .05*MAX_PWM
+        
+        kd = .0025*MAX_PWM
         # kd = .01*MAX_PWM
         # kd = .008*MAX_PWM
         # kd = .006*MAX_PWM
         # kd = .005*MAX_PWM
         # kd = .002*MAX_PWM
         # kd = .001*MAX_PWM
-        # .1->.2 best so far
         
-        # Find time since last pd call
-        # self.end_time_pwm = time.time()
-        # this acts as our timestep for the PD controller
-        # pwm_total_time = self.end_time_pwm - self.curr_time_pwm
+        # timestep for the PD controller
         # pwm_total_time = .1
         pwm_total_time = self.dt
 
         # Run PD controller to generate output for reaction wheels based on target orientation
         self.pwms[i] = pd_controller(quaternion, target, omega, kp, kd, self.pwms[i-1], pwm_total_time)
-
-        # self.curr_time_pwm = time.time()
 
         # print("PWM: ", self.pwms[i])
 
@@ -508,7 +500,6 @@ class Filter():
             # omega_w = last wheel speed
 
         # use alpha_rw or omega_w_dot (would have to impliment wheel info) to calc H_B_w_dot/L_w???
-        # why do we *dt and add instead of just returning new?
         # i_trans to edit intertia of body??
 
         return self.filtered_states[i]

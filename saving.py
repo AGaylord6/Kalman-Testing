@@ -107,6 +107,10 @@ def savePDF(outputFile, pngDir, filter, sum):
 
     pdf.image(os.path.join(pngDirectory, "PWM.png"), x = 10, y = pdf.get_y(), w = 180)
 
+    pwmText = f"""Max: {max(filter.pwms)}, min: {min(filter.pwms)}"""
+        
+    pdf.multi_cell(0, 5, pwmText, 0, 'L')
+
     pdf.add_page()
 
     pdfHeader(pdf, "Reaction wheel speeds")

@@ -201,7 +201,6 @@ if __name__ == "__main__":
         # TIME SINCE LAST ONE ITERATION AFFECTS CONTROLLER DUHHHH
         # longer time = larger pwm steps = faster controls
 
-    # print(ukf.reaction_speeds[:10])
 
     # TODO: impliment PySol and print B field 
     # TODO: print total time in seconds, control gains, and other important info
@@ -241,22 +240,3 @@ if __name__ == "__main__":
     # only show plot at end so they all show up
     plt.show()
 
-
-
-def current_to_speed(current, external_torque, reaction_speed):
-    '''
-    calculates hypothetical speed of reaction wheels 
-    taken from Patrick's code (CubeSat_Model_discrete.py)
-    uses the params object
-    @params:
-        current: current of reaction wheels
-        external_torque: external torque
-        reaction_speed: current speed of reaction wheels
-    
-    @returns:
-        next speeds of 4 wheels in rad/s
-    '''
-
-    omega_w_dot = (params.Kt*current + external_torque - params.bm*reaction_speed)/params.Jm
-
-    return omega_w_dot
