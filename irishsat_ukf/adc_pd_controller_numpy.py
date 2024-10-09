@@ -74,12 +74,10 @@ def pd_controller(state,target, omega, kp, kd, old_pwm, dt):
     # find error quaternion
     delta_q_out = delta_q(state, target) # outputs 4x1 with the first element being w
     #print("Error Quaternion: ", delta_q_out)
-    # loop through list to get 3 pwm vals
-    L = -kp * np.sign(delta_q_out[0]) * delta_q_out[1:4] - kd * omega # this is torque (which is proportional to angular acceleration)
 
-    # for i in range(len(pwm)):
-    #     pwm[i] = -kp * np.sign(delta_q_out[0]) * delta_q_out[i+1] - kd * omega[i]
-    # print('pwm: ', L)
+    # this is torque 
+    # (which is proportional to angular velocity bc that says how fast we're changing orientation)
+    L = -kp * np.sign(delta_q_out[0]) * delta_q_out[1:4] - kd * omega 
 
     # transformation matrix for NASA configuration
     alpha = 1/np.sqrt(3)
@@ -105,15 +103,11 @@ def pd_controller(state,target, omega, kp, kd, old_pwm, dt):
 
     pwm = np.add(L*dt,old_pwm) # this does finite difference to get velocity from acceleration
 
+    # Convert to integer values for actual PWM signals
+    pwm = np.array([int(p) for p in pwm])
 
-    # Convert to integers
-    pwm = np.array([int(pwm[0]),int(pwm[1]),int(pwm[2]),int(pwm[3])])
-    # Convert back to 1x4 list
-    #pwm = [int(pwm[0][0]), int(pwm[1][0]), int(pwm[2][0]), int(pwm[3][0])]
-    # print("pwm: ", pwm)
-    # Ensure pwm is always within limits of RPMs
-    np.putmask(pwm, pwm > 0.5*MAX_PWM, 0.5*MAX_PWM)
-    np.putmask(pwm, pwm < 0.5*-MAX_PWM, 0.5*-MAX_PWM)
+    # Ensure PWM is within bounds (0 to MAX_PWM)
+    pwm = np.clip(pwm, -MAX_PWM, MAX_PWM)
     # pwm = np.array([3000,0,0,0])
     return pwm
 
