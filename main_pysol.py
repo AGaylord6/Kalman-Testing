@@ -137,7 +137,6 @@ if __name__ == "__main__":
     # good for test 2
     # ukf.ukf_setQ(.00001, 10)
 
-
     # set measurement noise
     # parameters: magnetometer noise, gyroscope noise
     ukf.ukf_setR(.001, .01)
@@ -145,7 +144,6 @@ if __name__ == "__main__":
     ukf.ukf_setR(.001, .01)
     # good for test 2
     # ukf.ukf_setR(.00025, .0025)
-
 
     # if we aren't using real sensor data, we need to make up reaction wheel speeds, find ideal state, and generate fake data
     if ukf.ideal_known:
@@ -166,9 +164,6 @@ if __name__ == "__main__":
         gyroSD = 0.0035 * np.sqrt(200)
         gyroNoises = np.random.normal(0, gyroSD, (ukf.n, 3))
 
-        # generate data reading for each step 
-        # ukf.generateData(magNoises, gyroNoises, 0)
-    
     else:
         # load sensor data from file
         # this populates ukf.data and ukf.reaction_speeds
@@ -177,8 +172,17 @@ if __name__ == "__main__":
     # set first data point
     ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
+    # Initialize PID controller
+    kp = MAX_PWM * 10e-9   # Proportional gain
+    ki = MAX_PWM * 10e-10     # Integral gain
+    # if this is too high, it overrotates
+    kd = MAX_PWM * 10e-12  # Derivative gain
+    pid = PIDController(kp, ki, kd, ukf.dt)
+
     # should be a 90 degree turn about the top-down axis
-    target = normalize(np.array([1.0, 0.0, -1.0, 0.0]))
+    # switching the error_quat function reverse sign on third value
+    # check sign on kp and kd
+    target = normalize(np.array([1.0, 0.0, 1.0, 0.0]))
 
     for i in range(1, ukf.n):
 
@@ -195,7 +199,7 @@ if __name__ == "__main__":
         # filter our data and get next state
         # also run through our controls to get pwm => voltage => current => speed of reaction wheels
         # ukf.filtered_states[i] = ukf.ideal_states[i]
-        filtered = ukf.simulate_step(i, params, target)
+        filtered = ukf.simulate_step(i, params, target, pid)
         # game_visualize(np.array([filtered]), i-1)
 
         # TIME SINCE LAST ONE ITERATION AFFECTS CONTROLLER DUHHHH

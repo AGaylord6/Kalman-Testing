@@ -19,6 +19,7 @@ from tests import *
 from saving import *
 from main_pysol import params
 from irishsat_ukf.adc_pd_controller_numpy import *
+from irishsat_ukf.PID_controller import *
 
 
 class Filter():
@@ -246,19 +247,12 @@ class Filter():
 
         currQuat = self.filtered_states[i - 1][:4]
         currVel = self.filtered_states[i - 1][4:]
-        # currQuat = self.ideal_states[i - 1][:4]
-        # currVel = self.ideal_states[i - 1][4:]
         
-        # store speed from last step
-        # this should be handled by the controls section
-        # self.last_reaction_speeds = self.curr_reaction_speeds
-        # self.curr_reaction_speeds = self.reaction_speeds[i]
-
         # calculate reaction wheel acceleration
-        alpha = (self.curr_reaction_speeds - self.last_reaction_speeds) / self.dt
+        alpha = (self.reaction_speeds[i] - self.reaction_speeds[i-1]) / self.dt
 
         # progate through our EOMs to get next ideal state
-        currState = self.EOMS.eoms(currQuat, currVel, self.curr_reaction_speeds, np.zeros(3), alpha, self.dt)
+        currState = self.EOMS.eoms(currQuat, currVel, self.reaction_speeds[i], np.zeros(3), alpha, self.dt)
 
         # update next state
         self.ideal_states[i] = currState
@@ -386,9 +380,9 @@ class Filter():
 
         self.filtered_states = states
         return states
-    
 
-    def simulate_step(self, i, params, target):
+
+    def simulate_step(self, i, params, target, pid):
 
         start = time.time()
         
@@ -425,23 +419,22 @@ class Filter():
         # kd = .002*MAX_PWM
         # kd = .001*MAX_PWM
         
-        # timestep for the PD controller
-        # pwm_total_time = .1
-        pwm_total_time = self.dt
-
         # Run PD controller to generate output for reaction wheels based on target orientation
-        self.pwms[i] = pd_controller(quaternion, target, omega, kp, kd, self.pwms[i-1], pwm_total_time)
+        # self.pwms[i] = pd_controller(quaternion, target, omega, kp, kd, self.pwms[i-1], self.dt)
+
+        self.pwms[i] = pid.pid_controller(quaternion, target, omega, self.pwms[i-1])
 
         # print("PWM: ", self.pwms[i])
+        # print("current: ", self.currents[i-1])
 
         # update our temperature and current variables
         # TODO: find and enforce limits for current and temp (that match with max pwm)
 
         # external torque is 0 for now
-        external_torque = np.array([0.0, 0.0, 0.0, 0.0])
+        external_torque_on_wheel = np.array([0.0, 0.0, 0.0, 0.0])
 
         # find the predicted next speed of our reaction wheels based on current speed, current, and external torque
-        omega_w_dot = (params.Kt*self.currents[i-1] + external_torque - params.bm*self.reaction_speeds[i])/params.Jm
+        omega_w_dot = (params.Kt*self.currents[i-1] + external_torque_on_wheel - params.bm*self.reaction_speeds[i])/params.Jm
 
         # convert from pwm to voltage
         voltage = (9/MAX_PWM) * self.pwms[i]
@@ -467,7 +460,7 @@ class Filter():
         self.Tw_Ta += Tw_ta_dot * self.dt
         next_speeds = self.reaction_speeds[i] + omega_w_dot * self.dt
 
-        # print("current: ", self.current)
+        # print("current: ", self.currents[i])
 
         # print("next speeds: ", next_speeds)
         # print("")
