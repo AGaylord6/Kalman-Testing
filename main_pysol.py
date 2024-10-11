@@ -131,23 +131,14 @@ if __name__ == "__main__":
 
     # set process noise
     # parameters: noise magnitude, k (see Estimation II article by Ian Reed)
-    ukf.ukf_setQ(.001, 10)
-    # good for vn100 noises
     ukf.ukf_setQ(.00001, 10)
-    # good for test 2
-    # ukf.ukf_setQ(.00001, 10)
 
     # set measurement noise
     # parameters: magnetometer noise, gyroscope noise
     ukf.ukf_setR(.001, .01)
-    # good for vn100 noises
-    ukf.ukf_setR(.001, .01)
-    # good for test 2
-    # ukf.ukf_setR(.00025, .0025)
 
     # if we aren't using real sensor data, we need to make up reaction wheel speeds, find ideal state, and generate fake data
     if ukf.ideal_known:
-
         # ukf.generateSpeeds(100, -100, ukf.n, 5, np.array([0, 0, 1, 0]))
 
         # set sensor noises
@@ -173,16 +164,17 @@ if __name__ == "__main__":
     ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
     # Initialize PID controller
-    kp = MAX_PWM * 10e-9   # Proportional gain
-    ki = MAX_PWM * 10e-10     # Integral gain
+    kp = MAX_PWM * 5e-8   # Proportional gain
+    # close to kp allows for narrowing in on target, but not too close
+    ki = MAX_PWM * 1e-8     # Integral gain
     # if this is too high, it overrotates
-    kd = MAX_PWM * 10e-12  # Derivative gain
+    kd = MAX_PWM * 1e-10  # Derivative gain
     pid = PIDController(kp, ki, kd, ukf.dt)
 
     # should be a 90 degree turn about the top-down axis
     # switching the error_quat function reverse sign on third value
-    # check sign on kp and kd
-    target = normalize(np.array([1.0, 0.0, 1.0, 0.0]))
+    # check sign on kp and kd--something is off with the signs for the controller
+    target = normalize(np.array([1.0, 0.0, 0.5, 0.0]))
 
     for i in range(1, ukf.n):
 
@@ -208,6 +200,7 @@ if __name__ == "__main__":
 
     # TODO: impliment PySol and print B field 
     # TODO: print total time in seconds, control gains, and other important info
+    # print angle we're at in 1 axis
     plot_xyz(ukf.reaction_speeds, "Reaction Wheel Speeds", fileName="ReactionSpeeds.png")
 
     plot_xyz(ukf.pwms, "PWMs", fileName="PWM.png")

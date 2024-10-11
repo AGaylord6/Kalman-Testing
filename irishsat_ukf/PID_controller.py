@@ -50,7 +50,6 @@ class PIDController:
         delta_q_out = delta_q(state, target)  # outputs 4x1, where first element is the scalar part (q0)
 
         # Quaternion error (vector part only) and its proportional control component
-        # TODO: why are we using only the vector? what should the signs be?
         proportional = -self.kp * np.sign(delta_q_out[0]) * delta_q_out[1:4]
         # proportional = -self.kp * delta_q_out[1:4]
 
@@ -102,7 +101,7 @@ class PIDController:
         pwm = np.array([int(p) for p in pwm])
 
         # Ensure PWM is within bounds (0 to MAX_PWM)
-        pwm = np.clip(pwm, -MAX_PWM, MAX_PWM)
+        pwm = np.clip(pwm, -MAX_PWM * 0.5, MAX_PWM * 0.5)
 
         # pwm = np.array([3000, 0, 0, 0])
 
@@ -111,8 +110,8 @@ class PIDController:
 def delta_q(q_actual, q_target):
     '''
     delta_q
-        returns error quaternion by taking quaternion product (x) of current 
-        quaternion and inverse of target quaternion
+        Returns error quaternion by taking quaternion product (x)
+            between conjugate of actual quaternion and target quaternion. 
         Attitude error kinematics is on pg 290 of Fundamentals book
 
     @params
@@ -128,27 +127,15 @@ def delta_q(q_actual, q_target):
         scalar = 1
     # Takes the inverse of the quaternion given by 7.2 on page 289 of Fundamentals book q-1 = q* / ||q||^2 where q*=[q4; -q1:3]
     # quat_inv_target = np.array([q_target[0], -q_target[1], -q_target[2], -q_target[3]])/scalar
-    quat_inv_actual = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])/scalar
+    # quat_inv_actual = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])/scalar
+    q_actual_conjugate = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])
+
+    # TODO: since a quaternion can represent 2 orientations, we also want to ensure that the error quaternion is the shortest path
     
     # return quaternionMultiply(q_actual,quat_inv_target)
-    return quaternionMultiply(q_target,quat_inv_actual)
+    # return quaternionMultiply(q_target,quat_inv_actual)
+    return quaternionMultiply(q_actual_conjugate, q_target)
 
-    '''
-    # Calculate the quaternion error (q_error) between the actual and target quaternions.
-    # q_error = q_target * inv(q_actual)
-    
-    # @params
-    #     q_actual: Current quaternion (4x1)
-    #     q_target: Target quaternion (4x1)
-
-    # @returns:
-    #     q_error: Quaternion error (4x1)
-    
-    # Quaternion multiplication: q_error = q_target * inv(q_actual)
-    q_actual_inv = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])  # Inverse of the quaternion
-    q_error = quaternionMultiply(q_target, q_actual_inv)
-    return q_error
-    '''
 
 
 def quaternionMultiply(a, b):
