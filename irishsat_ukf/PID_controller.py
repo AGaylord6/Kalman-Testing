@@ -129,12 +129,17 @@ def delta_q(q_actual, q_target):
     # quat_inv_target = np.array([q_target[0], -q_target[1], -q_target[2], -q_target[3]])/scalar
     # quat_inv_actual = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])/scalar
     q_actual_conjugate = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])
+    
+    q_error = quaternionMultiply(q_actual_conjugate, q_target)
 
-    # TODO: since a quaternion can represent 2 orientations, we also want to ensure that the error quaternion is the shortest path
+    # since a quaternion can represent 2 orientations, we also want to ensure that the error quaternion is the shortest path
+    # from: Quaternion Attitude Control System of Highly Maneuverable Aircraft
+    if q_error[0] < 0:
+        q_error = -q_error
     
     # return quaternionMultiply(q_actual,quat_inv_target)
     # return quaternionMultiply(q_target,quat_inv_actual)
-    return quaternionMultiply(q_actual_conjugate, q_target)
+    return q_error
 
 
 

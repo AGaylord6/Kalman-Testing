@@ -172,8 +172,6 @@ if __name__ == "__main__":
     pid = PIDController(kp, ki, kd, ukf.dt)
 
     # should be a 90 degree turn about the top-down axis
-    # switching the error_quat function reverse sign on third value
-    # check sign on kp and kd--something is off with the signs for the controller
     target = normalize(np.array([1.0, 0.0, 0.5, 0.0]))
 
     for i in range(1, ukf.n):
@@ -200,7 +198,8 @@ if __name__ == "__main__":
 
     # TODO: impliment PySol and print B field 
     # TODO: print total time in seconds, control gains, and other important info
-    # print angle we're at in 1 axis
+    # TODO: find actual max torque (as well as max current, heat, etc)
+    # print angle we're at in 1 axis?
     plot_xyz(ukf.reaction_speeds, "Reaction Wheel Speeds", fileName="ReactionSpeeds.png")
 
     plot_xyz(ukf.pwms, "PWMs", fileName="PWM.png")
