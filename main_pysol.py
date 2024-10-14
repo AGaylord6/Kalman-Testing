@@ -199,7 +199,8 @@ if __name__ == "__main__":
     # TODO: impliment PySol and print B field 
     # TODO: print total time in seconds, control gains, and other important info
     # TODO: find actual max torque (as well as max current, heat, etc)
-    # print angle we're at in 1 axis?
+    # TODO: print euler angle we're at in 1 axis?
+    # TODO: wrap in function (one for controls, one without) with different printing/testing options, document new functions
     plot_xyz(ukf.reaction_speeds, "Reaction Wheel Speeds", fileName="ReactionSpeeds.png")
 
     plot_xyz(ukf.pwms, "PWMs", fileName="PWM.png")

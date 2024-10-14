@@ -37,8 +37,8 @@ class PIDController:
         PID controller to compute PWM signals for reaction wheels.
 
         @params:
-            state: Current quaternion of cubesat (4 x 1) [q0 ; q1:3]
-            target: Target quaternion of cubesat (4 x 1) [q0 ; q1:3]
+            state: Current normalized quaternion of cubesat (4 x 1) [q0 ; q1:3]
+            target: Target normalized quaternion of cubesat (4 x 1) [q0 ; q1:3]
             omega: Current angular velocity of cubesat (3 x 1)
             old_pwm: Previous PWM values for each motor (4 x 1)
 
@@ -50,8 +50,8 @@ class PIDController:
         delta_q_out = delta_q(state, target)  # outputs 4x1, where first element is the scalar part (q0)
 
         # Quaternion error (vector part only) and its proportional control component
-        proportional = -self.kp * np.sign(delta_q_out[0]) * delta_q_out[1:4]
-        # proportional = -self.kp * delta_q_out[1:4]
+        # proportional = -self.kp * np.sign(delta_q_out[0]) * delta_q_out[1:4]
+        proportional = -self.kp * delta_q_out[1:4]
 
         # Update the integral error (accumulate error over time)
         self.integral_error += delta_q_out[1:4] * self.dt
@@ -112,35 +112,27 @@ def delta_q(q_actual, q_target):
     delta_q
         Returns error quaternion by taking quaternion product (x)
             between conjugate of actual quaternion and target quaternion. 
-        Attitude error kinematics is on pg 290 of Fundamentals book
+        Tells us what rotation is needed to reach target
 
     @params
-        q_actual, q_target: quaternion matrices (1 x 4) [q0, q1:3]
+        q_actual, q_target: normalized (unit) quaternion matrices (1 x 4) [q0, q1:3]
     @returns
-        error quaternion
+        error quaternion: equals [1, 0, 0, 0] when q_actual and q_target are equal
     '''
 
-    # normalizing factor
-    # scalar = (q_target[0]**2 + q_target[1]**2 + q_target[2]**2 + q_target[3]**2)
-    scalar = (q_actual[0]**2 + q_actual[1]**2 + q_actual[2]**2 + q_actual[3]**2)
-    if scalar == 0:
-        scalar = 1
-    # Takes the inverse of the quaternion given by 7.2 on page 289 of Fundamentals book q-1 = q* / ||q||^2 where q*=[q4; -q1:3]
-    # quat_inv_target = np.array([q_target[0], -q_target[1], -q_target[2], -q_target[3]])/scalar
-    # quat_inv_actual = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])/scalar
-    q_actual_conjugate = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])
+    # because we're using unit quaternions, inverse = conjugate
+    q_actual_inverse = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])
     
-    q_error = quaternionMultiply(q_actual_conjugate, q_target)
+    q_error = quaternionMultiply(q_actual_inverse, q_target)
 
-    # since a quaternion can represent 2 orientations, we also want to ensure that the error quaternion is the shortest path
+    # since a quaternion can represent 2 relative orientations, we also want to ensure that the error quaternion is the shortest path
     # from: Quaternion Attitude Control System of Highly Maneuverable Aircraft
     if q_error[0] < 0:
+        # if desired rotation is > pi away, then the actual closest rotation is the inverse
         q_error = -q_error
     
-    # return quaternionMultiply(q_actual,quat_inv_target)
-    # return quaternionMultiply(q_target,quat_inv_actual)
+    # return normalize(q_error)
     return q_error
-
 
 
 def quaternionMultiply(a, b):

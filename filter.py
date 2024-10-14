@@ -402,22 +402,6 @@ class Filter():
         # Get current quaternion and angular velocity of cubesat
         quaternion = np.array(self.filtered_states[i][:4])
         omega = np.array(self.filtered_states[i][4:])
-        # Proportional derivative (PD) controller gains parameters (dependant upon max pwm/duty cycles)
-        kp = .05*MAX_PWM
-        # kp = .05*MAX_PWM
-        # kp = .04*MAX_PWM
-        # kp = .03*MAX_PWM
-        # kp = .025*MAX_PWM
-        # kp = .01*MAX_PWM
-        # kp = .005*MAX_PWM
-        
-        kd = .0025*MAX_PWM
-        # kd = .01*MAX_PWM
-        # kd = .008*MAX_PWM
-        # kd = .006*MAX_PWM
-        # kd = .005*MAX_PWM
-        # kd = .002*MAX_PWM
-        # kd = .001*MAX_PWM
         
         # Run PD controller to generate output for reaction wheels based on target orientation
         # self.pwms[i] = pd_controller(quaternion, target, omega, kp, kd, self.pwms[i-1], self.dt)
