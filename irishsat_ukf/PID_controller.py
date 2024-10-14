@@ -47,24 +47,32 @@ class PIDController:
         '''
 
         # Find the error quaternion (delta_q_out) between current and target quaternion
-        delta_q_out = delta_q(state, target)  # outputs 4x1, where first element is the scalar part (q0)
+        # represents the difference in orientation; [1, 0, 0, 0] meaning that they're aligned
+        delta_q_out = delta_q(state, target)
 
         # Quaternion error (vector part only) and its proportional control component
         # proportional = -self.kp * np.sign(delta_q_out[0]) * delta_q_out[1:4]
         proportional = -self.kp * delta_q_out[1:4]
 
         # Update the integral error (accumulate error over time)
+        # if there's small, consistent error, this corrects for it
+        # TODO: introduce limit on this term to combat integral windup
         self.integral_error += delta_q_out[1:4] * self.dt
-
-        # Integral control component
+        # print(self.integral_error)
         integral = self.ki * self.integral_error
 
         # Derivative control component based on angular velocity (omega)
         # derivative term responds to how fast the error quaternion is changing over time (which is related to how fast we're spinning)
-        # this allows us to anticipate and dampen rapid changes, preventing overshooting
+        # this allows us to anticipate and dampen rapid changes, opposing quick changes and preventing overshooting
         # alternatively, we could use the derivative of the error quaternion (using last error)
+        # TODO: use error in angular velocity instead?
         derivative = -self.kd * omega
 
+        # print("p: ", proportional)
+        # print("i: ", self.integral_error)
+        # print("d: ", derivative)
+
+        # integral is striclty increasing. Are the error quat signs off or is that correct behavior
         # Total control output (torque command)
         L = proportional + integral + derivative
 
@@ -94,13 +102,13 @@ class PIDController:
         # Map the torque output to PWM range
         pwm = (motor_torques / max_torque) * MAX_PWM
 
-        # Update PWM using finite difference: pwm = old_pwm + torque * dt
+        # Update PWM using finite difference (euler method): pwm = old_pwm + torque * dt
         pwm = np.add(pwm * self.dt, old_pwm)
 
         # Convert to integer values for actual PWM signals
         pwm = np.array([int(p) for p in pwm])
 
-        # Ensure PWM is within bounds (0 to MAX_PWM)
+        # Ensure PWM is within bounds of motor constraints
         pwm = np.clip(pwm, -MAX_PWM * 0.5, MAX_PWM * 0.5)
 
         # pwm = np.array([3000, 0, 0, 0])
@@ -117,7 +125,7 @@ def delta_q(q_actual, q_target):
     @params
         q_actual, q_target: normalized (unit) quaternion matrices (1 x 4) [q0, q1:3]
     @returns
-        error quaternion: equals [1, 0, 0, 0] when q_actual and q_target are equal
+        error quaternion: always normalized. equals [1, 0, 0, 0] when q_actual and q_target are equal
     '''
 
     # because we're using unit quaternions, inverse = conjugate

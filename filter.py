@@ -515,16 +515,17 @@ class Filter():
         return sum
     
 
-    def saveFile(self, fileName, sum):
+    def saveFile(self, fileName, sum, printTests):
         '''
         takes all saved pngs and compiles a pdf with the given fileName
-        uses the formating funciton found within saving.py
+        uses the formating function found within saving.py
         stores in outputDir global variable declared in saving.py and opens completed file
+        only prints tests results of printsTests is True
         '''
 
         # savePNGs(outputDir)
 
-        savePDF(fileName, outputDir, self, sum)
+        savePDF(fileName, outputDir, self, sum, printTests)
 
         openFile(fileName)
 

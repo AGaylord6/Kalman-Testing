@@ -35,10 +35,12 @@ def saveFig(fig, fileName):
 
 
 
-def savePDF(outputFile, pngDir, filter, sum):
+def savePDF(outputFile, pngDir, filter, sum, printTests):
     '''
     creates a report pdf using FPDF with all PNGs found in pngDir
     describes the graphs and their significance
+
+    printTests: true if we ran tests and want to print them
     '''
 
     # absolute path to current directory
@@ -80,7 +82,7 @@ def savePDF(outputFile, pngDir, filter, sum):
 
     else:
 
-        dataText = f"""IMU sensor data in true magnetic field of ({filter.B_true[0]}, {filter.B_true[1]}, {filter.B_true[2]}. For vn100, magnetometer noise = {magSD} and gyroscope noise = {gyroSD}."""
+        dataText = f"""IMU sensor data in true magnetic field of ({filter.B_true[0]}, {filter.B_true[1]}, {filter.B_true[2]}. For vn100, magnetometer noise = {round(magSD, 4)} and gyroscope noise = {round(gyroSD, 5)}."""
 
     pdf.multi_cell(0, 5, dataText, 0, 'L')
 
@@ -123,78 +125,80 @@ def savePDF(outputFile, pngDir, filter, sum):
 
     pdf.image(os.path.join(pngDirectory, "current.png"), x = 10, y = pdf.get_y(), w = 180)
 
-    pdf.add_page()
+    if printTests:
 
-    pdfHeader(pdf, "Tests")
+        pdf.add_page()
 
-    testText = f"""We have two metrics for examining our filter: statistical and speed tests. 
+        pdfHeader(pdf, "Tests")
 
-Speed tests:
+        testText = f"""We have two metrics for examining our filter: statistical and speed tests. 
 
-{filter.n} iterations were completed in {round(np.sum(filter.times) * 1000, 2)} milliseconds. This kalman filter took {round(np.mean(filter.times) * 1000, 2)} ms per iteration.
+    Speed tests:
 
-The statistical tests are based on Estimation II by Ian Reid. He outlines 3 tests that examine the innovation (or residual) of the filter, which is the difference betwee a measurement and the filter's prediction. 
+    {filter.n} iterations were completed in {round(np.sum(filter.times) * 1000, 2)} milliseconds. This kalman filter took {round(np.mean(filter.times) * 1000, 2)} ms per iteration.
 
-1) Consistency: the innovations should be randomly distributed about 0 and fall within its covariance bounds.
+    The statistical tests are based on Estimation II by Ian Reid. He outlines 3 tests that examine the innovation (or residual) of the filter, which is the difference betwee a measurement and the filter's prediction. 
 
-2) Unbiasedness: the sum of the normalised innovations squared should fall within a 95% chi square confidence interval.
-    If distribution sums are too small (fall below interval), then measurement/process noise is overestimated (too large). Therefore, the combined magnitude of the noises must be decreased.
-    Conversely, measurement/process noise can be increased to lower the sums of the normalized innovations squared. 
+    1) Consistency: the innovations should be randomly distributed about 0 and fall within its covariance bounds.
 
-3) Whiteness: autocorrelation should be distributed around 0 with no time dependecy."""
+    2) Unbiasedness: the sum of the normalised innovations squared should fall within a 95% chi square confidence interval.
+        If distribution sums are too small (fall below interval), then measurement/process noise is overestimated (too large). Therefore, the combined magnitude of the noises must be decreased.
+        Conversely, measurement/process noise can be increased to lower the sums of the normalized innovations squared. 
 
-    pdf.multi_cell(0, 5, testText, 0, 'L')
+    3) Whiteness: autocorrelation should be distributed around 0 with no time dependecy."""
 
-    # pdf.add_page()
+        pdf.multi_cell(0, 5, testText, 0, 'L')
 
-    # pdfHeader(pdf, "Test 1")
+        pdf.add_page()
 
-    # pdf.multi_cell(0, 5, "Vizually inspect that 95% of innovations fall within confidence interval bounds.", 0, 'L')
+        pdfHeader(pdf, "Test 1")
 
-    # # split into 6 different graphs?
-    # pdf.image(os.path.join(pngDirectory, "test1-1.png"), x=10, y=pdf.get_y(), w=180)
-    # pdf.ln(128)
-    # pdf.image(os.path.join(pngDirectory, "test1-2.png"), x=10, y=pdf.get_y(), w=180)
+        pdf.multi_cell(0, 5, "Vizually inspect that 95% of innovations fall within confidence interval bounds.", 0, 'L')
+
+        # split into 6 different graphs?
+        pdf.image(os.path.join(pngDirectory, "test1-1.png"), x=10, y=pdf.get_y(), w=180)
+        pdf.ln(128)
+        pdf.image(os.path.join(pngDirectory, "test1-2.png"), x=10, y=pdf.get_y(), w=180)
 
 
-    # # test 2: show 6 graphs + combined? or do no graphs and just numbers?
-    # pdf.add_page()
+        # test 2: show 6 graphs + combined? or do no graphs and just numbers?
+        pdf.add_page()
 
-    # pdfHeader(pdf, "Test 2")
+        pdfHeader(pdf, "Test 2")
 
-    # # pdf.multi_cell(0, 5, "Sum of each innovation must be within chi square bounds " + str([round(x, 3) for x in chi2.interval(0.95, 100)]) + " (df=100)", 0, 'L')
-    # pdf.multi_cell(0, 5, "Sum of each innovation must be within chi square bounds {} (df={})".format(str([round(x, 3) for x in chi2.interval(0.95, filter.n)]), filter.n), 0, 'L')
+        # pdf.multi_cell(0, 5, "Sum of each innovation must be within chi square bounds " + str([round(x, 3) for x in chi2.interval(0.95, 100)]) + " (df=100)", 0, 'L')
+        pdf.multi_cell(0, 5, "Sum of each innovation must be within chi square bounds {} (df={})".format(str([round(x, 3) for x in chi2.interval(0.95, filter.n)]), filter.n), 0, 'L')
 
-    # # pdf.multi_cell(0, 5, "Total sum " + str(round(sum, 3)) + " must be within interval " + str([round(x, 3) for x in chi2.interval(0.95, 600)]) + " (df=600)", 0, 'L')
-    # pdf.multi_cell(0, 5, "Total sum {} must be within 95% interval {} (df={})".format(str(round(sum, 3)), str([round(x, 3) for x in chi2.interval(0.95, filter.n*6)]), filter.n * filter.dim_mes), 0, 'L')
+        # pdf.multi_cell(0, 5, "Total sum " + str(round(sum, 3)) + " must be within interval " + str([round(x, 3) for x in chi2.interval(0.95, 600)]) + " (df=600)", 0, 'L')
+        pdf.multi_cell(0, 5, "Total sum {} must be within 95% interval {} (df={})".format(str(round(sum, 3)), str([round(x, 3) for x in chi2.interval(0.95, filter.n*6)]), filter.n * filter.dim_mes), 0, 'L')
 
-    # pdf.multi_cell(0, 5, "If distributions are too small, decrease measurement/process noise (and vice versa)", 0, 'L')
+        pdf.multi_cell(0, 5, "If distributions are too small, decrease measurement/process noise (and vice versa)", 0, 'L')
 
-    # # split into 6 different graphs
-    # pdf.image(os.path.join(pngDirectory, "test2-2-1.png"), x=5, y=pdf.get_y(), w=105)
-    # pdf.image(os.path.join(pngDirectory, "test2-2-2.png"), x=100, y=pdf.get_y(), w=105)
-    # pdf.ln(80)
-    # pdf.image(os.path.join(pngDirectory, "test2-2-3.png"), x=5, y=pdf.get_y(), w=105)
-    # pdf.image(os.path.join(pngDirectory, "test2-2-4.png"), x=100, y=pdf.get_y(), w=105)
-    # pdf.ln(80)
-    # pdf.image(os.path.join(pngDirectory, "test2-2-5.png"), x=5, y=pdf.get_y(), w=105)
-    # pdf.image(os.path.join(pngDirectory, "test2-2-6.png"), x=100, y=pdf.get_y(), w=105)
+        # split into 6 different graphs
+        pdf.image(os.path.join(pngDirectory, "test2-2-1.png"), x=5, y=pdf.get_y(), w=105)
+        pdf.image(os.path.join(pngDirectory, "test2-2-2.png"), x=100, y=pdf.get_y(), w=105)
+        pdf.ln(80)
+        pdf.image(os.path.join(pngDirectory, "test2-2-3.png"), x=5, y=pdf.get_y(), w=105)
+        pdf.image(os.path.join(pngDirectory, "test2-2-4.png"), x=100, y=pdf.get_y(), w=105)
+        pdf.ln(80)
+        pdf.image(os.path.join(pngDirectory, "test2-2-5.png"), x=5, y=pdf.get_y(), w=105)
+        pdf.image(os.path.join(pngDirectory, "test2-2-6.png"), x=100, y=pdf.get_y(), w=105)
 
-    # pdf.add_page()
+        pdf.add_page()
 
-    # pdfHeader(pdf, "Test 3")
+        pdfHeader(pdf, "Test 3")
 
-    # pdf.multi_cell(0, 5, "Analyze each graph for time dependency. Each autocorrelation should be randomly distributed around 0 the entire time (except for first element).", 0, 'L')
+        pdf.multi_cell(0, 5, "Analyze each graph for time dependency. Each autocorrelation should be randomly distributed around 0 the entire time (except for first element).", 0, 'L')
 
-    # # split into 6 different graphs
-    # pdf.image(os.path.join(pngDirectory, "test3-1.png"), x=5, y=pdf.get_y(), w=105)
-    # pdf.image(os.path.join(pngDirectory, "test3-2.png"), x=100, y=pdf.get_y(), w=105)
-    # pdf.ln(80)
-    # pdf.image(os.path.join(pngDirectory, "test3-3.png"), x=5, y=pdf.get_y(), w=105)
-    # pdf.image(os.path.join(pngDirectory, "test3-4.png"), x=100, y=pdf.get_y(), w=105)
-    # pdf.ln(80)
-    # pdf.image(os.path.join(pngDirectory, "test3-5.png"), x=5, y=pdf.get_y(), w=105)
-    # pdf.image(os.path.join(pngDirectory, "test3-6.png"), x=100, y=pdf.get_y(), w=105)
+        # split into 6 different graphs
+        pdf.image(os.path.join(pngDirectory, "test3-1.png"), x=5, y=pdf.get_y(), w=105)
+        pdf.image(os.path.join(pngDirectory, "test3-2.png"), x=100, y=pdf.get_y(), w=105)
+        pdf.ln(80)
+        pdf.image(os.path.join(pngDirectory, "test3-3.png"), x=5, y=pdf.get_y(), w=105)
+        pdf.image(os.path.join(pngDirectory, "test3-4.png"), x=100, y=pdf.get_y(), w=105)
+        pdf.ln(80)
+        pdf.image(os.path.join(pngDirectory, "test3-5.png"), x=5, y=pdf.get_y(), w=105)
+        pdf.image(os.path.join(pngDirectory, "test3-6.png"), x=100, y=pdf.get_y(), w=105)
 
     # # iterate over all PNGs in the directory and add them to the pdf
     # for i, png in enumerate(os.listdir(pngDirectory)):

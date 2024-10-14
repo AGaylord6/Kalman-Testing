@@ -166,13 +166,14 @@ if __name__ == "__main__":
     # Initialize PID controller
     kp = MAX_PWM * 5e-8   # Proportional gain
     # close to kp allows for narrowing in on target, but not too close
-    ki = MAX_PWM * 1e-8     # Integral gain
+    # smaller = oscillating more frequently
+    ki = MAX_PWM * .75e-8     # Integral gain
     # if this is too high, it overrotates
     kd = MAX_PWM * 1e-10  # Derivative gain
     pid = PIDController(kp, ki, kd, ukf.dt)
 
     # should be a 90 degree turn about the top-down axis
-    target = normalize(np.array([1.0, 0.0, 0.5, 0.0]))
+    target = normalize(np.array([1.0, 0.0, 1.0, 0.0]))
 
     for i in range(1, ukf.n):
 
@@ -194,6 +195,7 @@ if __name__ == "__main__":
 
         # TIME SINCE LAST ONE ITERATION AFFECTS CONTROLLER DUHHHH
         # longer time = larger pwm steps = faster controls
+        # print(i, end="")
 
 
     # TODO: impliment PySol and print B field 
@@ -211,7 +213,9 @@ if __name__ == "__main__":
     # plots filtered states (and ideal states if ideal_known = True)
     ukf.plotStates()
 
-    # sum = ukf.runTests()
+    tests = False
+    if tests:
+        sum = ukf.runTests()
 
     # 0 = only create pdf output, 1 = show 3D animation visualization, 2 = both, 3 = none
     visualize = 2
@@ -224,13 +228,13 @@ if __name__ == "__main__":
 
         outputFile = "output.pdf"
 
-        ukf.saveFile(outputFile, sum)
+        ukf.saveFile(outputFile, sum, tests)
 
     elif visualize == 2:
 
         outputFile = "output.pdf"
 
-        ukf.saveFile(outputFile, sum)
+        ukf.saveFile(outputFile, sum, tests)
 
         ukf.visualizeResults(ukf.filtered_states)
 
