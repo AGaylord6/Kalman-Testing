@@ -28,8 +28,11 @@ import signal
 
 
 class params:
-    MAX_CURRENT = 1.5
+    MAX_CURRENT = 1
     MIN_CURRENT = -MAX_CURRENT
+    thermal_resistance = 0.01  # °C per A^2 (or Kelvin per A^2)
+    cooling_constant = 0.1     # 1/s (rate of cooling)
+    wheel_coupling_factor = 0.5  # coupling between ambient and reaction wheel temperature
     # Importing motor parameters - Maxon DCX 8 M (9 volts)
     Rwa = 3.54      # Ohms, winding resistance at ambient temperature
     Lw = 0.424e-3  # Henry
@@ -92,6 +95,9 @@ Can get fake sensor mag data by rotating B field by ideal quaternion
 
 Fake gyro data by adding noise to ideal angular velocity
 
+https://kieranwynn.github.io/pyquaternion/#normalisation
+https://csimn.com/CSI_pages/PID.html
+
 '''
 
 
@@ -139,7 +145,10 @@ if __name__ == "__main__":
 
     # if we aren't using real sensor data, we need to make up reaction wheel speeds, find ideal state, and generate fake data
     if ukf.ideal_known:
-        # ukf.generateSpeeds(100, -100, ukf.n, 5, np.array([0, 0, 1, 0]))
+        # ukf.generateSpeeds(40, -40, ukf.n, 40, np.array([0, 1, 0, 0]))
+        # ukf.currents[0] = np.array([0, 3.50823537e-07, 0, 0])
+        # ukf.Th_Ta = np.array([0, -0.00110997, 0, 0])
+        # ukf.Tw_Ta = np.array([0, 0.01377844, 0, 0])
 
         # set sensor noises
         # noise sd = noise density * sqrt(sampling rate)
@@ -164,15 +173,20 @@ if __name__ == "__main__":
     ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
     # Initialize PID controller
-    kp = MAX_PWM * 5e-8   # Proportional gain
+    # kp = MAX_PWM * 7e-9   # Proportional gain
+    kp = MAX_PWM * 1e-8   # Proportional gain
     # close to kp allows for narrowing in on target, but not too close
     # smaller = oscillating more frequently
-    ki = MAX_PWM * .75e-8     # Integral gain
+    ki = MAX_PWM * 5e-9     # Integral gain
     # if this is too high, it overrotates
-    kd = MAX_PWM * 1e-10  # Derivative gain
+    #   spikes when it's jittering around target
+    # kd = MAX_PWM * 2e-10  # Derivative gain
+    kd = MAX_PWM * 1e-9  # Derivative gain
     pid = PIDController(kp, ki, kd, ukf.dt)
 
     # should be a 90 degree turn about the top-down axis
+    # TODO: find why this is flipped (inversed?)
+    # we want to provide a range of target quaterions, as it will never be exact (like an error)
     target = normalize(np.array([1.0, 0.0, 1.0, 0.0]))
 
     for i in range(1, ukf.n):
@@ -189,7 +203,6 @@ if __name__ == "__main__":
 
         # filter our data and get next state
         # also run through our controls to get pwm => voltage => current => speed of reaction wheels
-        # ukf.filtered_states[i] = ukf.ideal_states[i]
         filtered = ukf.simulate_step(i, params, target, pid)
         # game_visualize(np.array([filtered]), i-1)
 

@@ -52,7 +52,7 @@ class PIDController:
 
         # Quaternion error (vector part only) and its proportional control component
         # proportional = -self.kp * np.sign(delta_q_out[0]) * delta_q_out[1:4]
-        proportional = -self.kp * delta_q_out[1:4]
+        proportional = self.kp * delta_q_out[1:4]
 
         # Update the integral error (accumulate error over time)
         # if there's small, consistent error, this corrects for it
@@ -94,16 +94,18 @@ class PIDController:
                           [alpha, beta, gamma]]) / (1 + alpha**2 + beta**2 + gamma**2)
 
         # Convert torque (L) to reaction wheel space (4 motors)
-        motor_torques = np.matmul(W_inv, L)
+        # motor_torques = np.matmul(W_inv, L)
+        # TODO: temporary fix to remove some variability
+        motor_torques = np.append(L, np.array([0]))
 
         # PWM calculation: Map torque to PWM values
-        max_torque = 0.01  # Define the maximum torque your reaction wheels can handle (example: 0.01 Nm)
+        max_torque = 0.02  # Define the maximum torque your reaction wheels can handle (example: 0.01 Nm)
 
         # Map the torque output to PWM range
         pwm = (motor_torques / max_torque) * MAX_PWM
 
         # Update PWM using finite difference (euler method): pwm = old_pwm + torque * dt
-        pwm = np.add(pwm * self.dt, old_pwm)
+        # pwm = np.add(pwm * self.dt, old_pwm)
 
         # Convert to integer values for actual PWM signals
         pwm = np.array([int(p) for p in pwm])
@@ -111,7 +113,7 @@ class PIDController:
         # Ensure PWM is within bounds of motor constraints
         pwm = np.clip(pwm, -MAX_PWM * 0.5, MAX_PWM * 0.5)
 
-        # pwm = np.array([3000, 0, 0, 0])
+        # pwm = np.array([0, 3000, 0, 0])
 
         return pwm
 
@@ -130,8 +132,11 @@ def delta_q(q_actual, q_target):
 
     # because we're using unit quaternions, inverse = conjugate
     q_actual_inverse = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])
+    q_target_inverse = np.array([q_target[0], -q_target[1], -q_target[2], -q_target[3]])
+
     
-    q_error = quaternionMultiply(q_actual_inverse, q_target)
+    q_error = quaternionMultiply(q_actual, q_target_inverse)
+    # q_error = quaternionMultiply(q_target, q_actual_inverse)
 
     # since a quaternion can represent 2 relative orientations, we also want to ensure that the error quaternion is the shortest path
     # from: Quaternion Attitude Control System of Highly Maneuverable Aircraft
@@ -140,6 +145,15 @@ def delta_q(q_actual, q_target):
         q_error = -q_error
     
     # return normalize(q_error)
+    # error_range = 0.1
+    # if np.linalg.norm(q_error[1:4]) < error_range:
+        # if we're close enough to the target, don't waste energy on micro movements
+        #print("close enough")
+        # return np.array([1, 0, 0, 0])
+    # else:
+        #print("error: ", q_error)
+        # return q_error
+
     return q_error
 
 

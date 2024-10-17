@@ -78,11 +78,11 @@ def savePDF(outputFile, pngDir, filter, sum, printTests):
 
         pdfHeader(pdf, "Data")
 
-        dataText = f"""Simulate IMU data by adding noise to our ideal states in measurement space. For vn100, magnetometer noise = {magSD} and gyroscope noise = {gyroSD}."""
+        dataText = f"""Simulate IMU data by adding noise to our ideal states in measurement space. For vn100, magnetometer noise = {round(magSD, 5)} and gyroscope noise = {round(gyroSD, 5)}."""
 
     else:
 
-        dataText = f"""IMU sensor data in true magnetic field of ({filter.B_true[0]}, {filter.B_true[1]}, {filter.B_true[2]}. For vn100, magnetometer noise = {round(magSD, 4)} and gyroscope noise = {round(gyroSD, 5)}."""
+        dataText = f"""IMU sensor data in true magnetic field of ({filter.B_true[0]}, {filter.B_true[1]}, {filter.B_true[2]}. For vn100, magnetometer noise = {round(magSD, 5)} and gyroscope noise = {round(gyroSD, 5)}."""
 
     pdf.multi_cell(0, 5, dataText, 0, 'L')
 

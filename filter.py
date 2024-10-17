@@ -408,8 +408,9 @@ class Filter():
 
         self.pwms[i] = pid.pid_controller(quaternion, target, omega, self.pwms[i-1])
 
+        # print("wheel speed: ", self.reaction_speeds[i])
         # print("PWM: ", self.pwms[i])
-        # print("current: ", self.currents[i-1])
+        # print("old current: ", self.currents[i-1])
 
         # update our temperature and current variables
         # TODO: find and enforce limits for current and temp (that match with max pwm)
@@ -419,29 +420,41 @@ class Filter():
 
         # find the predicted next speed of our reaction wheels based on current speed, current, and external torque
         omega_w_dot = (params.Kt*self.currents[i-1] + external_torque_on_wheel - params.bm*self.reaction_speeds[i])/params.Jm
-
+        
         # convert from pwm to voltage
         voltage = (9/MAX_PWM) * self.pwms[i]
-        Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
+        # Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
 
         # update our current and ambient temperature difference variables
-        magic = .021
-        current_dot = (voltage - self.currents[i-1]*Rw - params.Kv*self.reaction_speeds[i])/params.Lw * magic
-        # current_dot = (voltage - self.currents[i-1]*Rw - params.Kv*self.reaction_speeds[i])/params.Lw
-        # g = (Vin[0]-i*Rw - params.Kv*smo_omega_w0)
+        # magic = 1
+        # current_dot = (voltage - self.currents[i-1]*Rw - params.Kv*self.reaction_speeds[i])/params.Lw * magic
+        # i_dot = (Vin - i*Rw - params.Kv*omega_w)/params.Lw
 
-        Th_Ta_dot = ((self.Th_Ta - self.Tw_Ta)/params.Rwh - self.Th_Ta/params.Rha)/params.Cha
+        # Th_Ta_dot = ((self.Th_Ta - self.Tw_Ta)/params.Rwh - self.Th_Ta/params.Rha)/params.Cha
 
-        Tw_ta_dot = (self.currents[i-1]**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
+        # Tw_ta_dot = (self.currents[i-1]**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
 
         # print("current_dot: ", current_dot)
         # print("speed_dot: ", omega_w_dot)
 
+        # Simplified current calculation based on voltage and reaction wheel speed
+        self.currents[i] = voltage / params.Rwa - params.Kv * self.reaction_speeds[i] * self.dt
+
+        # Simplified temperature model: temperature increases based on current squared, and has a linear cooling term
+        temp_increase_rate = self.currents[i]**2 * params.thermal_resistance
+        temp_cooling_rate = params.cooling_constant * (self.Th_Ta - self.Tw_Ta)
+        
+        # Update temperature variables
+        self.Th_Ta += (temp_increase_rate - temp_cooling_rate) * self.dt
+        
+        # Assume the reaction wheel temperature adjusts similarly, with some coupling to the ambient temperature
+        self.Tw_Ta += (temp_increase_rate * params.wheel_coupling_factor - temp_cooling_rate) * self.dt
+
         # update our variables with Euler's method of propagation
-        self.currents[i] = self.currents[i-1] + current_dot * self.dt
-        self.currents[i] = [max(min(x, params.MAX_CURRENT), params.MIN_CURRENT) for x in self.currents[i]]
-        self.Th_Ta += Th_Ta_dot * self.dt
-        self.Tw_Ta += Tw_ta_dot * self.dt
+        # self.currents[i] = self.currents[i-1] + current_dot * self.dt
+        # self.currents[i] = [max(min(x, params.MAX_CURRENT), params.MIN_CURRENT) for x in self.currents[i]]
+        # self.Th_Ta += Th_Ta_dot * self.dt
+        # self.Tw_Ta += Tw_ta_dot * self.dt
         next_speeds = self.reaction_speeds[i] + omega_w_dot * self.dt
 
         # print("current: ", self.currents[i])
@@ -456,14 +469,6 @@ class Filter():
 
         # https://www.reddit.com/r/scipy/comments/djb3pf/running_code_between_timesteps_using_scipys_solve/
         # odient function??
-
-# old current:  [0.83418335 0.83418335 0.         0.        ]
-# old wheel:  [346.76277161 346.76277161   0.           0.        ]    
-# new wheel:  [11971.92853007 11971.92853007     0.             0.        ]
-# voltage:  [6. 6. 0. 0.]
-# current:  [-30.02982735 -30.02982735   0.           0.        ]      
-# Th_Ta:  [-0.00421126 -0.00421126  0.          0.        ]
-# Tw_Ta:  [2.88542648 2.88542648 0.         0.        ]
 
         # J = inertia, L = tau (torque), omega = angular velocity
         #   i (current, based on voltage), Th_Ta (temp diff between housing and ambient), and Tw_Ta (winding and ambient) are states he's tracking that we don't care about
