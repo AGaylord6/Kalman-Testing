@@ -114,7 +114,7 @@ if __name__ == "__main__":
     # set up signal handler to shut down pyplot tabs
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
 
-    tf = 16
+    tf = 30
     dt = .02
     n = int(tf/dt)
 
@@ -173,20 +173,16 @@ if __name__ == "__main__":
     ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
     # Initialize PID controller
-    # kp = MAX_PWM * 7e-9   # Proportional gain
-    kp = MAX_PWM * 1e-8   # Proportional gain
+    kp = MAX_PWM * 7e-9   # Proportional gain
     # close to kp allows for narrowing in on target, but not too close
-    # smaller = oscillating more frequently
-    ki = MAX_PWM * 5e-9     # Integral gain
+    # smaller = oscillating more frequently, larger = overshooting more
+    ki = MAX_PWM * 5e-10     # Integral gain
     # if this is too high, it overrotates
-    #   spikes when it's jittering around target
-    # kd = MAX_PWM * 2e-10  # Derivative gain
     kd = MAX_PWM * 1e-9  # Derivative gain
     pid = PIDController(kp, ki, kd, ukf.dt)
 
     # should be a 90 degree turn about the top-down axis
-    # TODO: find why this is flipped (inversed?)
-    # we want to provide a range of target quaterions, as it will never be exact (like an error)
+    # we want to provide a range of target quaterions, as it will never be exact (like an error)?
     target = normalize(np.array([1.0, 0.0, 1.0, 0.0]))
 
     for i in range(1, ukf.n):

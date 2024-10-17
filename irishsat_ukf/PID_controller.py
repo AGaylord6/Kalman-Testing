@@ -51,7 +51,6 @@ class PIDController:
         delta_q_out = delta_q(state, target)
 
         # Quaternion error (vector part only) and its proportional control component
-        # proportional = -self.kp * np.sign(delta_q_out[0]) * delta_q_out[1:4]
         proportional = self.kp * delta_q_out[1:4]
 
         # Update the integral error (accumulate error over time)
@@ -65,7 +64,6 @@ class PIDController:
         # derivative term responds to how fast the error quaternion is changing over time (which is related to how fast we're spinning)
         # this allows us to anticipate and dampen rapid changes, opposing quick changes and preventing overshooting
         # alternatively, we could use the derivative of the error quaternion (using last error)
-        # TODO: use error in angular velocity instead?
         derivative = -self.kd * omega
 
         # print("p: ", proportional)
@@ -94,18 +92,15 @@ class PIDController:
                           [alpha, beta, gamma]]) / (1 + alpha**2 + beta**2 + gamma**2)
 
         # Convert torque (L) to reaction wheel space (4 motors)
-        # motor_torques = np.matmul(W_inv, L)
-        # TODO: temporary fix to remove some variability
-        motor_torques = np.append(L, np.array([0]))
+        motor_torques = np.matmul(W_inv, L)
+        # temporary fix to remove some variability
+        # motor_torques = np.append(L, np.array([0]))
 
         # PWM calculation: Map torque to PWM values
         max_torque = 0.02  # Define the maximum torque your reaction wheels can handle (example: 0.01 Nm)
 
         # Map the torque output to PWM range
         pwm = (motor_torques / max_torque) * MAX_PWM
-
-        # Update PWM using finite difference (euler method): pwm = old_pwm + torque * dt
-        # pwm = np.add(pwm * self.dt, old_pwm)
 
         # Convert to integer values for actual PWM signals
         pwm = np.array([int(p) for p in pwm])
@@ -131,7 +126,7 @@ def delta_q(q_actual, q_target):
     '''
 
     # because we're using unit quaternions, inverse = conjugate
-    q_actual_inverse = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])
+    # q_actual_inverse = np.array([q_actual[0], -q_actual[1], -q_actual[2], -q_actual[3]])
     q_target_inverse = np.array([q_target[0], -q_target[1], -q_target[2], -q_target[3]])
 
     
@@ -153,6 +148,7 @@ def delta_q(q_actual, q_target):
     # else:
         #print("error: ", q_error)
         # return q_error
+    # print(q_error)
 
     return q_error
 
