@@ -167,15 +167,15 @@ if __name__ == "__main__":
     ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
     # Initialize PID controller
-    # kp = MAX_PWM * 7e-9   # Proportional gain
-    kp = MAX_PWM * 7e-8   # Proportional gain
+    kp = MAX_PWM * 3.5e-8   # Proportional gain
+    # kp = MAX_PWM * 7e-8   # Proportional gain
     # close to kp allows for narrowing in on target, but not too close
     # smaller = oscillating more frequently, larger = overshooting more
-    # ki = MAX_PWM * 5e-10     # Integral gain
-    ki = MAX_PWM * 5e-9     # Integral gain
+    ki = MAX_PWM * 3e-9     # Integral gain
+    # ki = MAX_PWM * 5e-9     # Integral gain
     # if this is too high, it overrotates
-    # kd = MAX_PWM * 1e-9  # Derivative gain
-    kd = MAX_PWM * 1e-8  # Derivative gain
+    kd = MAX_PWM * 9e-9  # Derivative gain
+    # kd = MAX_PWM * 1e-8  # Derivative gain
     pid = PIDController(kp, ki, kd, ukf.dt)
 
     # should be a 90 degree turn about the top-down axis

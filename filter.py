@@ -413,12 +413,6 @@ class Filter():
         # update our temperature and current variables
         # TODO: find and enforce limits for current and temp (that match with max pwm)
 
-        # external torque is 0 for now
-        external_torque_on_wheel = np.array([0.0, 0.0, 0.0, 0.0])
-
-        # find the predicted next speed of our reaction wheels based on current speed, current, and external torque
-        omega_w_dot = (params.Kt*self.currents[i-1] + external_torque_on_wheel - params.bm*self.reaction_speeds[i])/params.Jm
-        
         # convert from pwm to voltage
         voltage = (9/MAX_PWM) * self.pwms[i]
         Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
@@ -434,7 +428,15 @@ class Filter():
         # print("speed_dot: ", omega_w_dot)
 
         # Simplified current calculation based on voltage and reaction wheel speed
-        self.currents[i] = (voltage - params.Kv * self.reaction_speeds[i]) / Rw
+        self.currents[i] = self.currents[i-1] + ((voltage - params.Kv * self.reaction_speeds[i]) / Rw) * self.dt
+
+        # external torque is 0 for now
+        external_torque_on_wheel = np.array([0.0, 0.0, 0.0, 0.0])
+
+        # find the predicted next speed of our reaction wheels based on current speed, current, and external torque
+        # Calculate angular acceleration: ω_dot = (motor torque - external torque - damping) / moment of inertia
+        # TODO: should this be new or old current?
+        omega_w_dot = (params.Kt*self.currents[i] + external_torque_on_wheel - params.bm*self.reaction_speeds[i])/params.Jm
 
         # Simplified temperature model: temperature increases based on current squared, and has a linear cooling term
         temp_increase_rate = self.currents[i]**2 * params.thermal_resistance
