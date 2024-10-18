@@ -1,6 +1,6 @@
 '''
 PID_controller.py
-Authors: Andrew Gaylord, Patrick Schwartz
+Authors: Andrew Gaylord, Patrick Schwartz, Michael Paulucci
 
 PID controller for cubesat attitude control using quaternion error kinematics. 
 the PID controller computes the PWM signals to send to our reaction wheels to achieve our target orientation.
@@ -116,7 +116,7 @@ def delta_q(q_actual, q_target):
     '''
     delta_q
         Returns error quaternion by taking quaternion product (x)
-            between conjugate of actual quaternion and target quaternion. 
+            between actual quaternion and conjugate of target quaternion. 
         Tells us what rotation is needed to reach target
 
     @params
@@ -139,16 +139,14 @@ def delta_q(q_actual, q_target):
         # if desired rotation is > pi away, then the actual closest rotation is the inverse
         q_error = -q_error
     
-    # return normalize(q_error)
     # error_range = 0.1
     # if np.linalg.norm(q_error[1:4]) < error_range:
-        # if we're close enough to the target, don't waste energy on micro movements
+        # TODO: if we're close enough to the target, don't waste energy on micro movements?
         #print("close enough")
         # return np.array([1, 0, 0, 0])
     # else:
         #print("error: ", q_error)
         # return q_error
-    # print(q_error)
 
     return q_error
 

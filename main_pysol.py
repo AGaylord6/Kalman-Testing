@@ -30,8 +30,8 @@ import signal
 class params:
     MAX_CURRENT = 1
     MIN_CURRENT = -MAX_CURRENT
-    thermal_resistance = 0.01  # °C per A^2 (or Kelvin per A^2)
-    cooling_constant = 0.1     # 1/s (rate of cooling)
+    thermal_resistance = 0.01  # °C per A^2 (or Kelvin per A^2). how much the current flowing through the system causes heat generation
+    cooling_constant = 0.1     # 1/s (rate of cooling). how quickly the temperature difference between the system and its surroundings dissipates
     wheel_coupling_factor = 0.5  # coupling between ambient and reaction wheel temperature
     # Importing motor parameters - Maxon DCX 8 M (9 volts)
     Rwa = 3.54      # Ohms, winding resistance at ambient temperature
@@ -88,13 +88,6 @@ class params:
 
 PySOL tells us the B field, ECI, ECEF, LLA
 
-
-Still must figure out ideal state based on previous state and EOMs
-
-Can get fake sensor mag data by rotating B field by ideal quaternion
-
-Fake gyro data by adding noise to ideal angular velocity
-
 https://kieranwynn.github.io/pyquaternion/#normalisation
 https://csimn.com/CSI_pages/PID.html
 
@@ -115,6 +108,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
 
     tf = 30
+    # time step should be small to combat instability of euler's method
     dt = .02
     n = int(tf/dt)
 
@@ -173,17 +167,21 @@ if __name__ == "__main__":
     ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
     # Initialize PID controller
-    kp = MAX_PWM * 7e-9   # Proportional gain
+    # kp = MAX_PWM * 7e-9   # Proportional gain
+    kp = MAX_PWM * 7e-8   # Proportional gain
     # close to kp allows for narrowing in on target, but not too close
     # smaller = oscillating more frequently, larger = overshooting more
-    ki = MAX_PWM * 5e-10     # Integral gain
+    # ki = MAX_PWM * 5e-10     # Integral gain
+    ki = MAX_PWM * 5e-9     # Integral gain
     # if this is too high, it overrotates
-    kd = MAX_PWM * 1e-9  # Derivative gain
+    # kd = MAX_PWM * 1e-9  # Derivative gain
+    kd = MAX_PWM * 1e-8  # Derivative gain
     pid = PIDController(kp, ki, kd, ukf.dt)
 
     # should be a 90 degree turn about the top-down axis
     # we want to provide a range of target quaterions, as it will never be exact (like an error)?
     target = normalize(np.array([1.0, 0.0, 1.0, 0.0]))
+    flip = False
 
     for i in range(1, ukf.n):
 
@@ -191,10 +189,8 @@ if __name__ == "__main__":
         # NOTE: this "ideal" state is not super based on truth because it is not generated beforehand. 
         #       it basically follows what our filter does, so it is not a good representation of the truth
         ideal = ukf.propagate_step(i)
-        # game_visualize(np.array([ukf.propagate_step(i)]), i-1)
         
-        # create mag data using transform and orbit data
-        # create gyro data by adding noise to ideal
+        # create fake magnetometer data by rotating B field by ideal quaternion, and gyro by adding noise to angular velocity
         ukf.generateData_step(i, magNoises[i], gyroNoises[i])
 
         # filter our data and get next state
@@ -202,13 +198,12 @@ if __name__ == "__main__":
         filtered = ukf.simulate_step(i, params, target, pid)
         # game_visualize(np.array([filtered]), i-1)
 
-        # TIME SINCE LAST ONE ITERATION AFFECTS CONTROLLER DUHHHH
-        # longer time = larger pwm steps = faster controls
-        # print(i, end="")
+        if i > ukf.n / 2 and flip == True:
+            target = normalize(np.array([1.0, 0.0, 0.0, 0.0]))
 
 
     # TODO: impliment PySol and print B field 
-    # TODO: print total time in seconds, control gains, and other important info
+    # TODO: print total time in seconds, control gains, and other important info (time to target?)
     # TODO: find actual max torque (as well as max current, heat, etc)
     # TODO: print euler angle we're at in 1 axis?
     # TODO: wrap in function (one for controls, one without) with different printing/testing options, document new functions

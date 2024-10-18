@@ -404,8 +404,6 @@ class Filter():
         omega = np.array(self.filtered_states[i][4:])
         
         # Run PD controller to generate output for reaction wheels based on target orientation
-        # self.pwms[i] = pd_controller(quaternion, target, omega, kp, kd, self.pwms[i-1], self.dt)
-
         self.pwms[i] = pid.pid_controller(quaternion, target, omega, self.pwms[i-1])
 
         # print("wheel speed: ", self.reaction_speeds[i])
@@ -423,22 +421,20 @@ class Filter():
         
         # convert from pwm to voltage
         voltage = (9/MAX_PWM) * self.pwms[i]
-        # Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
+        Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
 
         # update our current and ambient temperature difference variables
         # magic = 1
         # current_dot = (voltage - self.currents[i-1]*Rw - params.Kv*self.reaction_speeds[i])/params.Lw * magic
         # i_dot = (Vin - i*Rw - params.Kv*omega_w)/params.Lw
-
         # Th_Ta_dot = ((self.Th_Ta - self.Tw_Ta)/params.Rwh - self.Th_Ta/params.Rha)/params.Cha
-
         # Tw_ta_dot = (self.currents[i-1]**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
 
         # print("current_dot: ", current_dot)
         # print("speed_dot: ", omega_w_dot)
 
         # Simplified current calculation based on voltage and reaction wheel speed
-        self.currents[i] = voltage / params.Rwa - params.Kv * self.reaction_speeds[i] * self.dt
+        self.currents[i] = (voltage - params.Kv * self.reaction_speeds[i]) / Rw
 
         # Simplified temperature model: temperature increases based on current squared, and has a linear cooling term
         temp_increase_rate = self.currents[i]**2 * params.thermal_resistance
