@@ -107,7 +107,7 @@ if __name__ == "__main__":
     # set up signal handler to shut down pyplot tabs
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
 
-    tf = 30
+    tf = 18
     # time step should be small to combat instability of euler's method
     dt = .02
     n = int(tf/dt)
@@ -167,21 +167,21 @@ if __name__ == "__main__":
     ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
     # Initialize PID controller
-    kp = MAX_PWM * 3.5e-8   # Proportional gain
+    kp = MAX_PWM * 4.0e-8   # Proportional gain
     # kp = MAX_PWM * 7e-8   # Proportional gain
     # close to kp allows for narrowing in on target, but not too close
     # smaller = oscillating more frequently, larger = overshooting more
-    ki = MAX_PWM * 3e-9     # Integral gain
+    ki = MAX_PWM * 1e-9     # Integral gain
     # ki = MAX_PWM * 5e-9     # Integral gain
     # if this is too high, it overrotates
     kd = MAX_PWM * 9e-9  # Derivative gain
     # kd = MAX_PWM * 1e-8  # Derivative gain
     pid = PIDController(kp, ki, kd, ukf.dt)
 
-    # should be a 90 degree turn about the top-down axis
-    # we want to provide a range of target quaterions, as it will never be exact (like an error)?
+    # define our target orientation and whether we want to reverse it halfway through
+    # this should turn us 90 degrees to the right and back to our starting position
     target = normalize(np.array([1.0, 0.0, 1.0, 0.0]))
-    flip = False
+    flip = True
 
     for i in range(1, ukf.n):
 
@@ -235,12 +235,12 @@ if __name__ == "__main__":
         ukf.saveFile(outputFile, sum, tests)
 
     elif visualize == 2:
+        ukf.visualizeResults(ukf.filtered_states)
 
         outputFile = "output.pdf"
 
         ukf.saveFile(outputFile, sum, tests)
 
-        ukf.visualizeResults(ukf.filtered_states)
 
     # only show plot at end so they all show up
     plt.show()
