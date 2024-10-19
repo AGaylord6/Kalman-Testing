@@ -102,12 +102,19 @@ def signal_handler(sig, frame):
     plt.close('all')
 
 
+def run_filter_sim():
+    '''
+    run 
+    
+    '''
+
+
 if __name__ == "__main__":
 
     # set up signal handler to shut down pyplot tabs
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
 
-    tf = 18
+    tf = 15
     # time step should be small to combat instability of euler's method
     dt = .02
     n = int(tf/dt)
@@ -140,9 +147,6 @@ if __name__ == "__main__":
     # if we aren't using real sensor data, we need to make up reaction wheel speeds, find ideal state, and generate fake data
     if ukf.ideal_known:
         # ukf.generateSpeeds(40, -40, ukf.n, 40, np.array([0, 1, 0, 0]))
-        # ukf.currents[0] = np.array([0, 3.50823537e-07, 0, 0])
-        # ukf.Th_Ta = np.array([0, -0.00110997, 0, 0])
-        # ukf.Tw_Ta = np.array([0, 0.01377844, 0, 0])
 
         # set sensor noises
         # noise sd = noise density * sqrt(sampling rate)
@@ -180,8 +184,9 @@ if __name__ == "__main__":
 
     # define our target orientation and whether we want to reverse it halfway through
     # this should turn us 90 degrees to the right and back to our starting position
-    target = normalize(np.array([1.0, 0.0, 1.0, 0.0]))
-    flip = True
+    # TODO: x axis is bugged
+    target = normalize(np.array([1.0, 0.0, 0.0, 1.0]))
+    flip = False
 
     for i in range(1, ukf.n):
 
@@ -202,45 +207,40 @@ if __name__ == "__main__":
             target = normalize(np.array([1.0, 0.0, 0.0, 0.0]))
 
 
-    # TODO: impliment PySol and print B field 
+    # TODO: impliment PySol and print B field (and globe?)
     # TODO: print total time in seconds, control gains, and other important info (time to target?)
     # TODO: find actual max torque (as well as max current, heat, etc)
-    # TODO: print euler angle we're at in 1 axis?
+    # TODO: print euler angle we're at on 3 axis (in regards to states[0])
     # TODO: wrap in function (one for controls, one without) with different printing/testing options, document new functions
-    plot_xyz(ukf.reaction_speeds, "Reaction Wheel Speeds", fileName="ReactionSpeeds.png")
-
-    plot_xyz(ukf.pwms, "PWMs", fileName="PWM.png")
-
-    plot_multiple_lines([ukf.currents], ["Motor Current"], "Motor Current", fileName="Current.png")
+    ukf.plotWheelInfo()
 
     ukf.plotData()
     # plots filtered states (and ideal states if ideal_known = True)
     ukf.plotStates()
 
-    tests = False
-    if tests:
+    runTests = False
+    if runTests:
         sum = ukf.runTests()
 
     # 0 = only create pdf output, 1 = show 3D animation visualization, 2 = both, 3 = none
     visualize = 2
 
     if visualize == 1:
-        # ukf.visualizeResults(ukf.ideal_states)
         ukf.visualizeResults(ukf.filtered_states)
 
     elif visualize == 0:
 
         outputFile = "output.pdf"
 
-        ukf.saveFile(outputFile, sum, tests)
+        ukf.saveFile(outputFile, pid, target, sum, runTests)
 
     elif visualize == 2:
-        ukf.visualizeResults(ukf.filtered_states)
 
         outputFile = "output.pdf"
 
-        ukf.saveFile(outputFile, sum, tests)
+        ukf.saveFile(outputFile, pid, target, sum, runTests)
 
+        ukf.visualizeResults(ukf.filtered_states)
 
     # only show plot at end so they all show up
     plt.show()

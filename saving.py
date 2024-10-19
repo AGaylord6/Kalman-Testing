@@ -35,12 +35,19 @@ def saveFig(fig, fileName):
 
 
 
-def savePDF(outputFile, pngDir, filter, sum, printTests):
+def savePDF(outputFile, pngDir, filter, controller=None, target=[1, 0, 0, 0], sum=0, printTests=False):
     '''
-    creates a report pdf using FPDF with all PNGs found in pngDir
-    describes the graphs and their significance
+    creates a simulation report using FPDF with all PNGs found in pngDir
+    Describes the different graphs and their significance
 
-    printTests: true if we ran tests and want to print them
+    @params:
+        outputFile: name of pdf to be generated
+        pngDir: name of folder where graph PNGs are found
+        filter: Filter object with sim info
+        controller: PIDController object with weights info. If = None, controls info is not printed
+        target: our target quaternion for this simulation
+        sum: statistical tests sum
+        printTests: whether statistical tests were run or not (true = print test info)
     '''
 
     # absolute path to current directory
@@ -65,7 +72,6 @@ def savePDF(outputFile, pngDir, filter, sum, printTests):
 
     # if we are running with real data and do not know ideal behavior, leave that page out
     if filter.ideal_known:
-        # Graphical output of simulating the proposed kalman filter ({filter.kalmanMethod}) for {filter.n} time steps. 
         introText = f"""Ideal behavior is dictated by our propogating initial state and reaction wheel info for each step through our Equations of Motion (EOMs) and the true magnetic field ({filter.B_true[0][0]}, {filter.B_true[0][1]}, {filter.B_true[0][2]} microteslas)."""
         
         pdf.multi_cell(0, 5, introText, 0, 'L')
@@ -95,7 +101,7 @@ def savePDF(outputFile, pngDir, filter, sum, printTests):
 
     pdfHeader(pdf, "Filter Results")
 
-    filterText = f"""Kalman filter estimates our state for each time step by combining the noisy data and physics EOMs."""
+    filterText = f"""Kalman filter estimates our state each time step by combining noisy data and physics EOMs over {filter.n * filter.dt} seconds."""
 
     pdf.multi_cell(0, 5, filterText, 0, 'L')
 
@@ -105,25 +111,33 @@ def savePDF(outputFile, pngDir, filter, sum, printTests):
 
     pdf.add_page()
 
-    pdfHeader(pdf, "PWM")
+    if controller != None:
 
-    pdf.image(os.path.join(pngDirectory, "PWM.png"), x = 10, y = pdf.get_y(), w = 180)
+        pdfHeader(pdf, "Controls")
 
-    # pwmText = f"""Max: {max(filter.pwms)}, min: {min(filter.pwms)}"""
-        
-    # pdf.multi_cell(0, 5, pwmText, 0, 'L')
+        pwmText = f"""Our Proportional Integral Derivative controller tells our motors how fast to spin (with PMW signals) to orient us toward our target. The parameters are dependent upon our max PWM and must be finely tuned. 
+        This run's target quaternion: {target}
+        PID controller parameters: 
+            Proportional gain: {controller.kp}
+            Intergral gain: {controller.ki}
+            Derivative gain: {controller.kd}
+{filter.n} filter iterations were completed in {round(np.sum(filter.times) * 1000, 2)} milliseconds. This kalman filter took {round(np.mean(filter.times) * 1000, 2)} ms per iteration.
+"""
 
-    pdf.add_page()
+        pdf.multi_cell(0, 5, pwmText, 0, 'L')
+            
+        pdf.image(os.path.join(pngDirectory, "PWM.png"), x = 10, y = pdf.get_y(), w = 180)
+
+        pdf.add_page()
 
     pdfHeader(pdf, "Reaction wheel speeds")
 
     pdf.image(os.path.join(pngDirectory, "ReactionSpeeds.png"), x = 10, y = pdf.get_y(), w = 180)
 
-    pdf.add_page()
-
-    pdfHeader(pdf, "Motor Current")
-
-    pdf.image(os.path.join(pngDirectory, "current.png"), x = 10, y = pdf.get_y(), w = 180)
+    if controller != None:
+        # pdfHeader(pdf, "Motor Current")
+        pdf.ln(128)
+        pdf.image(os.path.join(pngDirectory, "current.png"), x = 10, y = pdf.get_y(), w = 180)
 
     if printTests:
 

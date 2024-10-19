@@ -464,24 +464,6 @@ class Filter():
         if i < self.n - 1:
             self.reaction_speeds[i + 1] = next_speeds
 
-
-        # https://www.reddit.com/r/scipy/comments/djb3pf/running_code_between_timesteps_using_scipys_solve/
-        # odient function??
-
-        # J = inertia, L = tau (torque), omega = angular velocity
-        #   i (current, based on voltage), Th_Ta (temp diff between housing and ambient), and Tw_Ta (winding and ambient) are states he's tracking that we don't care about
-        #   l_w is torque produced by pwm
-        #   H_B_w is angular momentum of wheel
-        #   J_w is 2D array of moment of inertias of wheels (= rw_config)
-        #   omega_B is angular velocity of body, omega_w is angular velocity of wheel
-        #   Rw is winding resistance (depends on temp)
-        #   he gets the pwm (u = input) from the solution states... but doesn't actually implement states. just based on time. 
-            # tau_e = external torque. last 4 elements of input array
-            # omega_w = last wheel speed
-
-        # use alpha_rw or omega_w_dot (would have to impliment wheel info) to calc H_B_w_dot/L_w???
-        # i_trans to edit intertia of body??
-
         return self.filtered_states[i]
 
 
@@ -501,7 +483,22 @@ class Filter():
             plotState_xyz(self.ideal_states, self.ideal_known)
         plotState_xyz(self.filtered_states, False)
 
-    
+    def plotWheelInfo(self):
+        '''
+        Plot 3 graphs relating to reaction wheel simulation:
+        Angular velocity of the wheels (ReactionSpeeds.png), PWM (pulse width modulation) signals (PWM.png), and current to the motors (Current.png)
+        The simulated current is determined by the PWM signal output by our PID controller
+        '''
+        # angular velocity of our 4 wheels at every time step
+        plot_xyz(self.reaction_speeds, "Reaction Wheel Speeds", fileName="ReactionSpeeds.png")
+        
+        # PWM signal output by our controller
+        plot_xyz(self.pwms, "PWMs", fileName="PWM.png")
+        
+        # simulated current to our 4 wheels
+        plot_multiple_lines([self.currents], ["Motor Current"], "Motor Current", fileName="Current.png")
+
+
     def runTests(self):
         '''
         runs 3 statistical tests on filter results according to Estimation II by Ian Reed:
@@ -518,7 +515,7 @@ class Filter():
         return sum
     
 
-    def saveFile(self, fileName, sum, printTests):
+    def saveFile(self, fileName, controller=None, target=[1, 0, 0, 0], sum=0, printTests=False):
         '''
         takes all saved pngs and compiles a pdf with the given fileName
         uses the formating function found within saving.py
@@ -528,7 +525,7 @@ class Filter():
 
         # savePNGs(outputDir)
 
-        savePDF(fileName, outputDir, self, sum, printTests)
+        savePDF(fileName, outputDir, self, controller, target, sum, printTests)
 
         openFile(fileName)
 
