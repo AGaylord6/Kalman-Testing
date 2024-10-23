@@ -120,9 +120,7 @@ def savePDF(outputFile, pngDir, filter, controller=None, target=[1, 0, 0, 0], su
         PID controller parameters: 
             Proportional gain: {controller.kp}
             Intergral gain: {controller.ki}
-            Derivative gain: {controller.kd}
-{filter.n} filter iterations were completed in {round(np.sum(filter.times) * 1000, 2)} milliseconds. This kalman filter took {round(np.mean(filter.times) * 1000, 2)} ms per iteration.
-"""
+            Derivative gain: {controller.kd}"""
 
         pdf.multi_cell(0, 5, pwmText, 0, 'L')
             
@@ -138,6 +136,30 @@ def savePDF(outputFile, pngDir, filter, controller=None, target=[1, 0, 0, 0], su
         # pdfHeader(pdf, "Motor Current")
         pdf.ln(128)
         pdf.image(os.path.join(pngDirectory, "current.png"), x = 10, y = pdf.get_y(), w = 180)
+
+    pdf.add_page()
+    eulerText = f"""Our filtered orientation represented by Euler Angles (counterclockwise rotation about x, y, z). Can bug out sometimes. Near 180 degrees (pi) is the same as zero. """
+    pdf.multi_cell(0, 5, eulerText, 0, 'L')
+    pdf.image(os.path.join(pngDirectory, "Euler.png"), x=10, y=pdf.get_y(), w=180)
+
+    pdf.add_page()
+
+    pdfHeader(pdf, "General Info")
+
+    # set numpy printing option so that 0's don't have scientific notation
+    np.set_printoptions(formatter={'all': lambda x: '{:<11d}'.format(int(x)) if x == 0 else "{:+.2e}".format(x)})
+
+    infoText = f"""{filter.n} filter iterations were completed in {round(np.sum(filter.times) * 1000, 2)} milliseconds. This kalman filter took {round(np.mean(filter.times) * 1000, 2)} ms per iteration.
+    
+Process Noise:
+
+{filter.R}
+
+Measurement Noise:
+
+{filter.Q}"""
+
+    pdf.multi_cell(0, 5, infoText, 0, 'L')
 
     if printTests:
 

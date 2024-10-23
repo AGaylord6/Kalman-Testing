@@ -70,10 +70,10 @@ def move_figure(f, x=0, y=0):
         f.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
     elif backend == 'WXAgg':
         f.canvas.manager.window.SetPosition((x, y))
-    else:
+    # else:
         # This works for QT and GTK
         # You can also use window.setGeometry
-        f.canvas.manager.window.move(x, y)
+        # f.canvas.manager.window.move(x, y)
 
 
 def plot_xyz(data, title, x=0, y=0, fileName="default.png"):
@@ -84,7 +84,7 @@ def plot_xyz(data, title, x=0, y=0, fileName="default.png"):
         data: 2D array of xyz coordinates or quaternions
         title: graph title
         x, y: coordinates for graph on screen
-        fileNmae: name of png file to save graph as
+        fileName: name of png file to save graph as
     '''
 
     newData = data.transpose()
@@ -95,6 +95,45 @@ def plot_xyz(data, title, x=0, y=0, fileName="default.png"):
     else:
         # plot xyz
         plot_multiple_lines(newData, ["x", "y", "z"], title, x, y, fileName=fileName)
+
+
+def plotAngles(data, title, fileName="default.png"):
+    '''
+    plot a list of Euler Angles with special graph formatting
+
+    @params:
+        data: 2D array of Euler Angles
+        title: graph title
+        fileName: name of png file to save graph as
+    '''
+    data = data.transpose()
+    labels = ["roll (x)", "pitch (y)", "yaw (z)"]
+
+    # Create a figure and axes
+    fig, ax = plt.subplots()
+
+    # Plot each line.
+    for i, line in enumerate(data):
+        ax.plot(line, label=labels[i])
+
+    # Add a legend
+    ax.legend()
+
+    # Set the y-axis ticks and labels in terms of pi
+    # The ticks should be multiples of pi (e.g., -pi, -pi/2, 0, pi/2, pi)
+    pi_ticks = [-np.pi, -np.pi/2, 0, np.pi/2, np.pi]
+    pi_labels = [r'$-\pi$', r'$-\pi/2$', r'$0$', r'$\pi/2$', r'$\pi$']
+
+    # Set the y-axis limits if needed
+    plt.ylim([pi_ticks[0]-.2, pi_ticks[len(pi_ticks)-1]+.2])
+
+    # Apply the custom ticks
+    plt.yticks(pi_ticks, pi_labels)
+
+    plt.title(title)
+
+    # save the figure as a png using saving.py
+    saveFig(fig, fileName)
 
 
 def plotState_xyz(data, ideal=False):

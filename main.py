@@ -43,7 +43,6 @@ notes:
 TODO:
     add controls + target, integrate PySOL
     other correctness tests?
-    print filter parameters used in each run in doc (R, Q, etc)
     test data file reading + update for wheels
     which method is correct for normalized innovation covariance (test #2)? (and which CI?) (see tests.py)
         should interval bound be added to measurement, 0, or average?

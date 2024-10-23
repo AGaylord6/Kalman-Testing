@@ -478,10 +478,16 @@ class Filter():
         '''
         plots the filtered states (filteredQuaternion.png, filteredVelocity.png) found in self.filtered_states
         also plots ideal states (idealQuaternion.png, idealVelocity.png) found in self.ideal_states if self.ideal_known = True
+        also also plots the euler angle of our ideal state (with respect to our starting state)
         '''
         if self.ideal_known:
             plotState_xyz(self.ideal_states, self.ideal_known)
         plotState_xyz(self.filtered_states, False)
+        # unpack the filtered quaternion and convert it to euler angles
+        # use the error quaternion between our starting state and current state to base angle off of starting point
+        plotAngles(np.array([euler_from_quaternion(*delta_q(a[:4], self.filtered_states[0][:4])) for a in self.filtered_states]), "Euler angles", fileName="Euler.png")
+        # plotAngles(np.array([euler_from_quaternion(*a[:4]) for a in self.filtered_states]), "Euler angles", fileName="Euler.png")
+
 
     def plotWheelInfo(self):
         '''

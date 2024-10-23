@@ -104,7 +104,7 @@ def signal_handler(sig, frame):
 
 def run_filter_sim():
     '''
-    run 
+    Generates ideal states and sensor data, allowing us to benchmark our kalman filter against simulated "truth". 
     
     '''
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     # set up signal handler to shut down pyplot tabs
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
 
-    tf = 15
+    tf = 10
     # time step should be small to combat instability of euler's method
     dt = .02
     n = int(tf/dt)
@@ -184,9 +184,9 @@ if __name__ == "__main__":
 
     # define our target orientation and whether we want to reverse it halfway through
     # this should turn us 90 degrees to the right and back to our starting position
-    # TODO: x axis is bugged
-    target = normalize(np.array([1.0, 0.0, 0.0, 1.0]))
-    flip = False
+    # TODO: x axis is bugged (or just different moments of inertia). Wants to go sideways
+    target = normalize(np.array([1.0, 0.0, 1.0, 0.0]))
+    flip = True
 
     for i in range(1, ukf.n):
 
@@ -208,10 +208,9 @@ if __name__ == "__main__":
 
 
     # TODO: impliment PySol and print B field (and globe?)
-    # TODO: print total time in seconds, control gains, and other important info (time to target?)
     # TODO: find actual max torque (as well as max current, heat, etc)
-    # TODO: print euler angle we're at on 3 axis (in regards to states[0])
     # TODO: wrap in function (one for controls, one without) with different printing/testing options, document new functions
+    #       make list of everything that we could possibly change (max pwm, max torque, noises, Q/R, )
     ukf.plotWheelInfo()
 
     ukf.plotData()
