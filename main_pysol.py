@@ -22,6 +22,7 @@ from filter import *
 from graphing import *
 from tests import *
 from saving import *
+from params import *
 
 import matplotlib.pyplot as plt
 import signal
@@ -108,15 +109,20 @@ def run_filter_sim():
     
     '''
 
+def run_controls_sim():
+    '''
+    Combines motor dynamics and PID controller to propogate our state step by step and orient towards a target
+    '''
+
 
 if __name__ == "__main__":
 
     # set up signal handler to shut down pyplot tabs
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame))
 
-    tf = 10
+    tf = TF
     # time step should be small to combat instability of euler's method
-    dt = .02
+    dt = DT
     n = int(tf/dt)
 
     # create unscented kalman filter object
@@ -126,67 +132,60 @@ if __name__ == "__main__":
                  7, 6,                      # state space dimension, measurement space dimension
                  0, 0,                      # measurement noise, process noise (overwritten later)
                  np.array([19, 1.7, 49]),   # true magnetic field
-                 np.array([0, 0, 0, 0]),    # starting reaction wheel speed
-                 True,                      # whether we know ideal state or we are using actual sensor data
+                 RW_INITIAL,                # starting reaction wheel speed
+                 IDEAL_KNOWN,               # whether we know ideal state or we are using actual sensor data
                  UKF)                       # filter type
     
     # clear output directory from last simulation
     clearDir(outputDir)
 
     # text file with data values
-    dataFile = "data.txt"
+    dataFile = DATA_FILE
 
     # set process noise
     # parameters: noise magnitude, k (see Estimation II article by Ian Reed)
-    ukf.ukf_setQ(.00001, 10)
+    ukf.ukf_setQ(PROCESS_NOISE_MAG, PROCESS_NOISE_K)
 
     # set measurement noise
     # parameters: magnetometer noise, gyroscope noise
-    ukf.ukf_setR(.001, .01)
+    ukf.ukf_setR(MEASUREMENT_MAGNETOMETER_NOISE, MEASUREMENT_GYROSCOPE_NOISE)
 
     # if we aren't using real sensor data, we need to make up reaction wheel speeds, find ideal state, and generate fake data
     if ukf.ideal_known:
-        # ukf.generateSpeeds(40, -40, ukf.n, 40, np.array([0, 1, 0, 0]))
+        # ukf.generateSpeeds(400, -400, ukf.n, 40, np.array([0, 1, 0, 0]))
 
         # set sensor noises
-        # noise sd = noise density * sqrt(sampling rate)
-        # vn100 imu sampling rate from user manual = 200 Hz
-        
-        # magNoises = np.random.normal(0, .035, (ukf.n, 3))
-        # mag noise density from vn100 website = 140 uGauss /sqrt(Hz)
-        magSD = (140 * 10e-6) * np.sqrt(200)
+        magSD = SENSOR_MAGNETOMETER_SD
         magNoises = np.random.normal(0, magSD, (ukf.n, 3))
 
-        # gyroNoises = np.random.normal(0, .01, (ukf.n, 3))
-        # gyro noise density from vn100 website = 0.0035 /s /sqrt(Hz)
-        gyroSD = 0.0035 * np.sqrt(200)
+        gyroSD = SENSOR_GYROSCOPE_SD
         gyroNoises = np.random.normal(0, gyroSD, (ukf.n, 3))
+
+        # set first data point
+        ukf.generateData_step(0, magNoises[0], gyroNoises[0])
 
     else:
         # load sensor data from file
         # this populates ukf.data and ukf.reaction_speeds
         ukf.loadData(dataFile)
 
-    # set first data point
-    ukf.generateData_step(0, magNoises[0], gyroNoises[0])
-
     # Initialize PID controller
-    kp = MAX_PWM * 4.0e-8   # Proportional gain
-    # kp = MAX_PWM * 7e-8   # Proportional gain
+    kp = KP   # Proportional gain
+    # kp = MAX_PWM * 7e-8
     # close to kp allows for narrowing in on target, but not too close
     # smaller = oscillating more frequently, larger = overshooting more
-    ki = MAX_PWM * 1e-9     # Integral gain
-    # ki = MAX_PWM * 5e-9     # Integral gain
+    ki = KI     # Integral gain
+    # ki = MAX_PWM * 5e-9
     # if this is too high, it overrotates
-    kd = MAX_PWM * 9e-9  # Derivative gain
-    # kd = MAX_PWM * 1e-8  # Derivative gain
+    kd = KD  # Derivative gain
+    # kd = MAX_PWM * 1e-8
     pid = PIDController(kp, ki, kd, ukf.dt)
 
     # define our target orientation and whether we want to reverse it halfway through
     # this should turn us 90 degrees to the right and back to our starting position
     # TODO: x axis is bugged (or just different moments of inertia). Wants to go sideways
-    target = normalize(np.array([1.0, 0.0, 1.0, 0.0]))
-    flip = True
+    target = normalize(TARGET)
+    flip = False
 
     for i in range(1, ukf.n):
 
@@ -204,40 +203,37 @@ if __name__ == "__main__":
         # game_visualize(np.array([filtered]), i-1)
 
         if i > ukf.n / 2 and flip == True:
-            target = normalize(np.array([1.0, 0.0, 0.0, 0.0]))
+            target = normalize(QUAT_INITIAL)
 
 
     # TODO: impliment PySol and print B field (and globe?)
     # TODO: find actual max torque (as well as max current, heat, etc)
-    # TODO: wrap in function (one for controls, one without) with different printing/testing options, document new functions
-    #       make list of everything that we could possibly change (max pwm, max torque, noises, Q/R, )
+    # TODO: wrap in function (one for controls, one with tests instead) with different printing/testing options, document new functions
+    #       make list of everything that we could possibly change (max torque, noises, Q/R, inertias, dt, target, initial state)
     ukf.plotWheelInfo()
 
     ukf.plotData()
     # plots filtered states (and ideal states if ideal_known = True)
     ukf.plotStates()
 
-    runTests = False
+    # if true, run statistical tests outlined in Estimation II by Ian Reed
+    runTests = RUN_STATISTICAL_TESTS
     if runTests:
         sum = ukf.runTests()
 
     # 0 = only create pdf output, 1 = show 3D animation visualization, 2 = both, 3 = none
-    visualize = 2
+    visualize = RESULT
 
     if visualize == 1:
         ukf.visualizeResults(ukf.filtered_states)
 
     elif visualize == 0:
 
-        outputFile = "output.pdf"
-
-        ukf.saveFile(outputFile, pid, target, sum, runTests)
+        ukf.saveFile(OUTPUT_FILE, pid, target, sum, runTests)
 
     elif visualize == 2:
 
-        outputFile = "output.pdf"
-
-        ukf.saveFile(outputFile, pid, target, sum, runTests)
+        ukf.saveFile(OUTPUT_FILE, pid, target, sum, runTests)
 
         ukf.visualizeResults(ukf.filtered_states)
 

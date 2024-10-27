@@ -18,6 +18,7 @@ from graphing import *
 from tests import *
 from saving import *
 from main_pysol import params
+from params import *
 from irishsat_ukf.adc_pd_controller_numpy import *
 from irishsat_ukf.PID_controller import *
 
@@ -40,9 +41,9 @@ class Filter():
         # starting state (default is standard quaternion and no angular velocity)
         self.state = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         # enforce normalized quaternion
-        self.state[:4] = normalize(self.state[:4])
+        self.state[:4] = normalize(QUAT_INITIAL)
         # starting covariance (overrid by ukf_setQ)
-        self.cov = np.identity(dim) * 5e-7
+        self.cov = np.identity(dim) * COVARIANCE_INITIAL_MAG
 
         # 2D array of n innovations and covariances (populated by filter.simulate)
         self.innovations = np.zeros((n, dim_mes))
@@ -62,19 +63,16 @@ class Filter():
         # 1x4 array of current reaction wheel speeds
         self.curr_reaction_speeds = reaction_speeds
         # reaction wheel speed of last time step
-        # self.last_reaction_speeds = np.zeros(4)
         self.last_reaction_speeds = reaction_speeds
 
         # reaction wheel speeds for all n steps
         self.reaction_speeds = np.zeros((n, 4))
         self.reaction_speeds[0] = reaction_speeds
-        # self.reaction_speeds[1] = reaction_speeds
 
         # get moment of inertia of body of satellite
-        I_body = params.J_B
-        I_spin = 5.1e-7
-        # I_spin = 1e-7
-        I_trans = 0
+        I_body = CUBESAT_BODY_INERTIA
+        I_spin = SPIN_AXIS_INERTIA
+        I_trans = TRANSVERSE_AXIS_INERTIA
         # intialize EOMs using intertia measurements of cubeSat
         self.EOMS = TEST1EOMS(I_body, I_spin, I_trans)
 
@@ -95,9 +93,6 @@ class Filter():
         # pwm values (motor signals) for all n steps
         self.pwms = np.zeros((n, 4))
         self.pwms[0] = np.array([0, 0, 0, 0])
-
-        self.curr_time_pwm = time.time()
-        self.end_time_pwm = 0
 
         # covariance of system for all n steps
         self.covs = np.zeros((n, dim, dim))
@@ -485,7 +480,7 @@ class Filter():
         plotState_xyz(self.filtered_states, False)
         # unpack the filtered quaternion and convert it to euler angles
         # use the error quaternion between our starting state and current state to base angle off of starting point
-        plotAngles(np.array([euler_from_quaternion(*delta_q(a[:4], self.filtered_states[0][:4])) for a in self.filtered_states]), "Euler angles", fileName="Euler.png")
+        plotAngles(np.array([euler_from_quaternion(*delta_q(a[:4], QUAT_INITIAL)) for a in self.filtered_states]), "Euler angles", fileName="Euler.png")
         # plotAngles(np.array([euler_from_quaternion(*a[:4]) for a in self.filtered_states]), "Euler angles", fileName="Euler.png")
 
 
