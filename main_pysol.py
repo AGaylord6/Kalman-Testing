@@ -207,9 +207,8 @@ if __name__ == "__main__":
 
 
     # TODO: impliment PySol and print B field (and globe?)
-    # TODO: find actual max torque (as well as max current, heat, etc)
+    # TODO: move quat_multiply and others from hfunc (or rename to orientaiton helper)
     # TODO: wrap in function (one for controls, one with tests instead) with different printing/testing options, document new functions
-    #       make list of everything that we could possibly change (max torque, noises, Q/R, inertias, dt, target, initial state)
     ukf.plotWheelInfo()
 
     ukf.plotData()

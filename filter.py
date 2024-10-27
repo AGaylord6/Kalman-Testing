@@ -410,20 +410,21 @@ class Filter():
 
         # convert from pwm to voltage
         voltage = (9/MAX_PWM) * self.pwms[i]
-        Rw = params.Rwa *(1+params.alpha_Cu*self.Tw_Ta)
+        # find the updated winding resistance based on ambient * our current temp
+        Rw = RWA *(1 + ALPHA_CU * self.Tw_Ta)
 
         # update our current and ambient temperature difference variables
         # magic = 1
-        # current_dot = (voltage - self.currents[i-1]*Rw - params.Kv*self.reaction_speeds[i])/params.Lw * magic
-        # i_dot = (Vin - i*Rw - params.Kv*omega_w)/params.Lw
-        # Th_Ta_dot = ((self.Th_Ta - self.Tw_Ta)/params.Rwh - self.Th_Ta/params.Rha)/params.Cha
-        # Tw_ta_dot = (self.currents[i-1]**2*Rw - (self.Th_Ta - self.Tw_Ta)/params.Rwh)/params.Cwa
+        # current_dot = (voltage - self.currents[i-1]*Rw - KV*self.reaction_speeds[i])/LW * magic
+        # i_dot = (Vin - i*Rw - KV*omega_w)/LW
+        # Th_Ta_dot = ((self.Th_Ta - self.Tw_Ta)/Rwh - self.Th_Ta/Rha)/Cha
+        # Tw_ta_dot = (self.currents[i-1]**2*Rw - (self.Th_Ta - self.Tw_Ta)/Rwh)/Cwa
 
         # print("current_dot: ", current_dot)
         # print("speed_dot: ", omega_w_dot)
 
         # Simplified current calculation based on voltage and reaction wheel speed
-        self.currents[i] = self.currents[i-1] + ((voltage - params.Kv * self.reaction_speeds[i]) / Rw) * self.dt
+        self.currents[i] = self.currents[i-1] + ((voltage - KV * self.reaction_speeds[i]) / Rw) * self.dt
 
         # external torque is 0 for now
         external_torque_on_wheel = np.array([0.0, 0.0, 0.0, 0.0])
@@ -431,21 +432,21 @@ class Filter():
         # find the predicted next speed of our reaction wheels based on current speed, current, and external torque
         # Calculate angular acceleration: ω_dot = (motor torque - external torque - damping) / moment of inertia
         # TODO: should this be new or old current?
-        omega_w_dot = (params.Kt*self.currents[i] + external_torque_on_wheel - params.bm*self.reaction_speeds[i])/params.Jm
+        omega_w_dot = (KT*self.currents[i] + external_torque_on_wheel - BM*self.reaction_speeds[i])/JM
 
         # Simplified temperature model: temperature increases based on current squared, and has a linear cooling term
-        temp_increase_rate = self.currents[i]**2 * params.thermal_resistance
-        temp_cooling_rate = params.cooling_constant * (self.Th_Ta - self.Tw_Ta)
+        temp_increase_rate = self.currents[i]**2 * THERMAL_RESISTANCE
+        temp_cooling_rate = COOLING_CONSTANT * (self.Th_Ta - self.Tw_Ta)
         
         # Update temperature variables
         self.Th_Ta += (temp_increase_rate - temp_cooling_rate) * self.dt
         
         # Assume the reaction wheel temperature adjusts similarly, with some coupling to the ambient temperature
-        self.Tw_Ta += (temp_increase_rate * params.wheel_coupling_factor - temp_cooling_rate) * self.dt
+        self.Tw_Ta += (temp_increase_rate * WHEEL_COUPLING_FACTOR - temp_cooling_rate) * self.dt
 
         # update our variables with Euler's method of propagation
         # self.currents[i] = self.currents[i-1] + current_dot * self.dt
-        # self.currents[i] = [max(min(x, params.MAX_CURRENT), params.MIN_CURRENT) for x in self.currents[i]]
+        self.currents[i] = np.clip(self.currents[i], MIN_CURRENT, MAX_CURRENT)
         # self.Th_Ta += Th_Ta_dot * self.dt
         # self.Tw_Ta += Tw_ta_dot * self.dt
         next_speeds = self.reaction_speeds[i] + omega_w_dot * self.dt

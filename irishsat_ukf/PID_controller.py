@@ -13,6 +13,7 @@ import numpy as np
 from UKF_algorithm import normalize
 
 MAX_PWM = 65535 # pwm val that gives max speed according to Tim
+MAX_RW_TORQUE = .02 # Define the maximum torque your reaction wheels can handle (example: 0.01 Nm)
 
 
 class PIDController:
@@ -97,7 +98,7 @@ class PIDController:
         # motor_torques = np.append(L, np.array([0]))
 
         # PWM calculation: Map torque to PWM values
-        max_torque = 0.02  # Define the maximum torque your reaction wheels can handle (example: 0.01 Nm)
+        max_torque = MAX_RW_TORQUE  
 
         # Map the torque output to PWM range
         pwm = (motor_torques / max_torque) * MAX_PWM
