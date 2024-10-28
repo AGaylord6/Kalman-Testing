@@ -11,9 +11,20 @@ Takes in a target quaternion, gains parameters, and current state
 
 import numpy as np
 from UKF_algorithm import normalize
+import os
+import sys
 
-MAX_PWM = 65535 # pwm val that gives max speed according to Tim
-MAX_RW_TORQUE = .02 # Define the maximum torque your reaction wheels can handle (example: 0.01 Nm)
+# To import module that is in the parent directory of your current module:
+# currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+# parentdir = os.path.dirname(currentdir)
+# sys.path.insert(0, parentdir) 
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+
+from params import *
+
+# MAX_PWM = 65535 # pwm val that gives max speed according to Tim
+# MAX_RW_TORQUE = .02 # Define the maximum torque your reaction wheels can handle (example: 0.01 Nm)
+# MAX_RW_TORQUE = params.MAX_RW_TORQUE # Define the maximum torque your reaction wheels can handle (example: 0.01 Nm)
 
 
 class PIDController:

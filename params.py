@@ -10,13 +10,14 @@ import numpy as np
 
 QUAT_INITIAL = np.array([1.0, 0.0, 0.0, 0.0])
 RW_INITIAL = np.array([0.0, 0.0, 0.0, 0.0])
+RW_EXTERNAL_TORQUE = np.array([0.0, 0.0, 0.0, 0.0])
 
 # Pulse Width Modulation (PWM) signal that generates the max speed in our motors
 MAX_PWM = 65535
 # (TODO) max torque that our wheels can handle (Nm)
 MAX_RW_TORQUE = 0.02
 
-# =======  OPTIONS  ======================================
+# =======  OPTIONS  =======================================
 
 IDEAL_KNOWN = True
 DATA_FILE = "data.txt"
@@ -29,8 +30,8 @@ RESULT = 2
 
 OUTPUT_FILE = "output.pdf"
 
+# =======  CONTROLS  =======================================
 
-# =======  CONTROLS  ===============================
 # target orientation for if we're simulating controls
 TARGET = np.array([1.0, 0.0, 0.5, 0.0])
 
@@ -42,7 +43,8 @@ KD = MAX_PWM * 9e-9         # Derivative gain
 TF = 10
 DT = .02
 
-# =======  UKF  ====================================
+# =======  UKF  =================================================
+
 COVARIANCE_INITIAL_MAG = 5e-7
 
 # TODO: notes from Estimation II
@@ -63,7 +65,8 @@ K = 0
 # beta minimizes higher order errors in covariance estimation
 BETA = 2
 
-# =======  SENSORS  ==================================
+# =======  SENSORS  ==================================================
+
 # noise sd = noise density * sqrt(sampling rate)
 # vn100 imu sampling rate from user manual = 200 Hz
 
@@ -73,12 +76,12 @@ SENSOR_MAGNETOMETER_SD = (140 * 10e-6) * np.sqrt(200)
 # gyro noise density from vn100 website = 0.0035 /s /sqrt(Hz)
 SENSOR_GYROSCOPE_SD = 0.0035 * np.sqrt(200)
 
-# =======  PHYSICS  ===================================
+# =======  PHYSICS  ================================================
 
 # principal moment of inertia for reaction wheels about spin axis and about axis transverse to spin axis respectively
-# TODO: what are these?
 SPIN_AXIS_INERTIA = 5.1e-7
 # SPIN_AXIS_INERTIA = 1e-7
+# TODO: what does this mean?
 TRANSVERSE_AXIS_INERTIA = 0.0
 
 # moment of inertia tensor of 2U CubeSat (w/o reaction wheel inertias) (kg m^2)
@@ -92,6 +95,7 @@ Iw2 = Iw1
 Iw3 = Iw1
 Iw4 = Iw1
 # Moment of inertia tensor of rxn wheels [kg m^2]
+# this gets multiplied by SPIN_AXIS_INERTIA during EOMs calculation
 RW_CONFIG_INERTIA = np.array([[Iw1, 0, 0, 0],
                               [0, Iw2, 0, 0],
                               [0, 0, Iw3, 0],
@@ -122,6 +126,3 @@ Rwh = 2.66     # K/W
 Cwa = 2.31/Rwh     # Thermal Capacitance
 Cha = 162/Rha      # Thermal Capacitance
 
-
-
-# external torque?

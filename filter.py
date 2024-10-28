@@ -427,7 +427,7 @@ class Filter():
         self.currents[i] = self.currents[i-1] + ((voltage - KV * self.reaction_speeds[i]) / Rw) * self.dt
 
         # external torque is 0 for now
-        external_torque_on_wheel = np.array([0.0, 0.0, 0.0, 0.0])
+        external_torque_on_wheel = RW_EXTERNAL_TORQUE
 
         # find the predicted next speed of our reaction wheels based on current speed, current, and external torque
         # Calculate angular acceleration: ω_dot = (motor torque - external torque - damping) / moment of inertia
