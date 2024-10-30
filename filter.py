@@ -17,7 +17,6 @@ import time
 from graphing import *
 from tests import *
 from saving import *
-from main_pysol import params
 from params import *
 from irishsat_ukf.adc_pd_controller_numpy import *
 from irishsat_ukf.PID_controller import *
@@ -199,22 +198,12 @@ class Filter():
         # t0 = 0
         # tf = self.n * self.dt
         # # use attitude propagator to find actual ideal quaternion for n steps
-        # states = propagator.propagate_states(t0, tf, self.n)
-
-        # # intertia constants of cubesat from juwan
-        # I_body = I_body_sat * 1e-7
-        # I_spin = 5.1e-7
-        # # I_trans = 5.1e-7
-        # I_trans = 0
-        # # intialize EOMs using intertia measurements of cubeSat
-        # EOMS = TEST1EOMS(I_body, I_spin, I_trans)
+        # states = propagator.propagate_states(t0, tf, self.n
 
         currState = self.state
 
         # make array of all states
         states = np.array([currState])
-
-        self.curr_reaction_speeds = np.zeros(3)
 
         for i in range(self.n):
 
@@ -326,20 +315,28 @@ class Filter():
         @params:
             fileName: name of file to load data from
         '''
-        # data is in the format a, b, c, x, y, z, e, f, g
-        # a, b, c are magnetic field in state space readings, x, y, z are angular velocity, e, f, g are reaction wheel speeds
-        # each line is a new time step
-        # read in file line by line and store data and reaction wheel speeds in self.data and self.reaction_speeds
-        data = []
-        speeds = []
-        with open(fileName, 'r') as file:
-            for line in file:
-                data.append(np.array([float(x) for x in line.split(",")[:6]]))
-                speeds.append(np.array([float(x) for x in line.split(",")[6:]]))
-        
-        self.data = np.array(data)
-        self.reaction_speeds = np.array(speeds)
-        return data
+        try:
+            # data is in the format a, b, c, x, y, z, e, f, g
+            # a, b, c are magnetic field in state space readings, x, y, z are angular velocity, e, f, g are reaction wheel speeds
+            # each line is a new time step
+            # read in file line by line and store data and reaction wheel speeds in self.data and self.reaction_speeds
+            data = []
+            speeds = []
+            with open(fileName, 'r') as file:
+                for line in file:
+                    data.append(np.array([float(x) for x in line.split(",")[:6]]))
+                    speeds.append(np.array([float(x) for x in line.split(",")[6:]]))
+            
+            self.data = np.array(data)
+            self.reaction_speeds = np.array(speeds)
+            return data
+            
+        except FileNotFoundError:
+            print(f"Error: Data file {fileName} not found")
+            return 1
+        except Exception as e:
+            print(f"Error loading data: {e}")
+            return 1
 
 
     def simulate(self):
@@ -354,7 +351,9 @@ class Filter():
         '''
 
         states = []
-        self.curr_reaction_speeds = np.zeros(3)
+
+        # initialize current reaction wheel speed
+        self.curr_reaction_speeds = self.reaction_speeds[0]
         
         # run each of n steps through the filter
         for i in range(self.n):
@@ -377,7 +376,7 @@ class Filter():
         return states
 
 
-    def simulate_step(self, i, params, target, pid):
+    def simulate_step(self, i, target, pid):
 
         start = time.time()
         

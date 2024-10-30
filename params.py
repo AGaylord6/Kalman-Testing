@@ -47,12 +47,13 @@ DT = .02
 
 COVARIANCE_INITIAL_MAG = 5e-7
 
-# TODO: notes from Estimation II
-# filter process noise Q
+# Filter process noise Q represents uncertainty in our state transition model
+# Higher values mean we trust our model less and measurements more
 PROCESS_NOISE_MAG = 0.00001
 PROCESS_NOISE_K = 10
 
-# filter measurement noise R
+# Filter measurement noise R
+# Higher values mean we trust our measurements less
 MEASUREMENT_MAGNETOMETER_NOISE = 0.001
 MEASUREMENT_GYROSCOPE_NOISE = 0.01
 
@@ -126,3 +127,45 @@ Rwh = 2.66     # K/W
 Cwa = 2.31/Rwh     # Thermal Capacitance
 Cha = 162/Rha      # Thermal Capacitance
 
+
+
+# ======= QUATERNION TOLERANCES ============================
+# Quaternion error tolerances define how close we need to be to our target orientation
+QUAT_ERROR_TOLERANCE = 0.01  # Maximum acceptable quaternion error magnitude
+                            # 0.01 ≈ 1.15 degrees of rotation error
+                            # sqrt(1 - cos(theta/2)) for small angles
+ANGULAR_RATE_TOLERANCE = 0.001  # rad/s, maximum acceptable angular rate when "settled"
+
+# ======= ENVIRONMENTAL DISTURBANCES ======================
+# Typical disturbance torques for a 2U CubeSat in LEO
+GRAVITY_GRADIENT_MAX = 1e-7  # Nm, maximum gravity gradient torque
+                            # Varies with orbit altitude and satellite orientation
+                            # Typically ~10^-7 Nm for 2U in 400km orbit
+
+SOLAR_PRESSURE_MAX = 1e-8   # Nm, maximum solar radiation pressure torque
+                           # Depends on surface area, reflectivity, sun angle
+                           # Typically ~10^-8 Nm for 2U
+
+AERO_DRAG_MAX = 2e-7       # Nm, maximum aerodynamic drag torque
+                          # Varies with altitude (atmospheric density)
+                          # Typically ~10^-7 Nm at 400km
+
+MAGNETIC_RESIDUAL = 1e-6   # Am^2, residual magnetic dipole of spacecraft
+                          # Creates torque when interacting with Earth's field
+                          # Typical value for CubeSat with basic magnetic cleanliness
+
+# Combined disturbance for simulation
+TOTAL_DISTURBANCE_MAX = (GRAVITY_GRADIENT_MAX + 
+                        SOLAR_PRESSURE_MAX + 
+                        AERO_DRAG_MAX +
+                        MAGNETIC_RESIDUAL * np.linalg.norm([19e-6, 1.7e-6, 49e-6]))  # Total maximum disturbance torque
+
+
+    # # Add environmental disturbances
+    # disturbance_direction = np.random.rand(3) - 0.5  # Random direction
+    # disturbance_direction = disturbance_direction / np.linalg.norm(disturbance_direction)
+    # disturbance_magnitude = np.random.uniform(0, TOTAL_DISTURBANCE_MAX)
+    # disturbance_torque = disturbance_magnitude * disturbance_direction
+    
+    # # Add disturbance to dynamics
+    # angular_acceleration += np.dot(self.J_B_inv, disturbance_torque)
