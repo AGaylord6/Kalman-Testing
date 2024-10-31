@@ -22,6 +22,20 @@ import sympy
 
 begin_time = time.time()
 
+# Patrick code notes: 
+# J = inertia, L = tau (torque), omega = angular velocity
+#   i (current, based on voltage), Th_Ta (temp diff between housing and ambient), and Tw_Ta (winding and ambient) are states he's tracking that we don't care about
+#   l_w is torque produced by pwm
+#   H_B_w is angular momentum of wheel
+#   J_w is 2D array of moment of inertias of wheels (= rw_config)
+#   omega_B is angular velocity of body, omega_w is angular velocity of wheel
+#   Rw is winding resistance (depends on temp)
+#   he gets the pwm (u = input) from the solution states... but doesn't actually implement states. just based on time. 
+    # tau_e = external torque. last 4 elements of input array
+    # omega_w = last wheel speed
+# use alpha_rw or omega_w_dot (would have to impliment wheel info) to calc H_B_w_dot/L_w???
+# we use i_trans to edit intertia of body??
+
 # Function that defines system of 1st order ODE's
 def f(t,x,u,params):
         '''
@@ -69,6 +83,16 @@ def f(t,x,u,params):
         Th_Ta_dot = ((Th_Ta - Tw_Ta)/params.Rwh - Th_Ta/params.Rha)/params.Cha
         Tw_Ta_dot = (i**2*Rw - (Th_Ta - Tw_Ta)/params.Rwh)/params.Cwa
 
+        print("old current: ", i)
+        # print("old wheel: ", omega_w)
+        # print("new wheel: ", omega_w_dot)
+        # print("voltage: ", Vin)
+        # print("current_dot: ", i_dot)
+        # print("Th_Ta: ", Th_Ta_dot)
+        # print("Tw_Ta: ", Tw_Ta_dot)
+        # print("")
+        # print("iteration")
+
         # Torques of reaction wheels along their axes
         L_w = np.matmul(params.J_w,omega_w_dot)
 
@@ -103,12 +127,7 @@ def u(t,x):
     # then the 4 external torques on each of the 4 rxn wheels
     MAX_PWM = 65535 # pwm val that gives max speed (2^16-1)
 
-    # Set pwm values for each motor
-    if t < 5:
-        pwm = np.array([MAX_PWM/1.5, MAX_PWM/1.5, 0, 0]) #MAX_PWM/2, MAX_PWM/2, MAX_PWM/2])
-    else:
-        pwm = np.array([0,0,0,0])
-
+    pwm = np.array([0, 3000, 0, 0])
     # External torques (set to 0 for now)
     tau_e = np.array([0, 0, 0, 0]) # 
 
@@ -123,7 +142,7 @@ def define_init_states():
     # scalar part q4
     # IrishSat uses q = [q0 q1:3] (scalar part is first instead of last)
     # We will continue with the IrishSat representation 
-    q_0 = np.array([1, 1, 1, 1]) # [q0 q1:3]
+    q_0 = np.array([1, 0, 0, 0]) # [q0 q1:3]
     #q_0 = q_0/np.linalg.norm(q_0)
 
     # Angular velocity of the body with respect to inertial frame
@@ -149,7 +168,7 @@ def define_init_states():
 class params:
     # Importing motor parameters - Maxon DCX 8 M (9 volts)
     Rwa = 3.54      # Ohms, winding resistance at ambient temperature
-    Lw = 0.424e-3  # Henry
+    Lw = 0.424e-3  # Motor inductance [Henry]
     Kt = 8.82e-3   # Torque constant Nm/A
     Kv = Kt    # Voltage constant V*s/rad
     Jm = 5.1*(1e-7)   # Kg m^2
@@ -201,7 +220,7 @@ class params:
 ## Define system 
 # Define ode45 parameters
 t0 = 0
-tf = 10
+tf = 4
 dt = .02
 n = int((tf-t0)/dt)
 tim = np.linspace(t0, tf, n+1) # Array of time 

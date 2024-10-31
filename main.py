@@ -48,11 +48,11 @@ TODO: more statistical tests, test data reading w/ wheels
 
 notes:
     must ensure quaternion is normalized when output by EOMs
-    added innovation and innovation covariance to UKF_algorithm
     user must pip install fpdf
 
     which method is correct for normalized innovation covariance (test #2)? (and which CI?) (see tests.py)
         should interval bound be added to measurement, 0, or average?
+
 '''
 
 

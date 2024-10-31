@@ -18,7 +18,6 @@ from graphing import *
 from tests import *
 from saving import *
 from params import *
-from irishsat_ukf.adc_pd_controller_numpy import *
 from irishsat_ukf.PID_controller import *
 
 
